@@ -1,0 +1,13 @@
+[
+{ 
+  "agentType":"agentCollect",
+  "agentName": "Elsa",
+  "communicationRange": 3,
+  "initialLocation": "free",
+  "backPackCapacityGold": 100,
+  "backPackCapacityDiamond":-1, 
+  "detectionRadius": 0,
+  "strengthExpertise": 2,
+  "lockPickingExpertise":1
+  }
+]

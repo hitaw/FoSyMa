@@ -12,6 +12,8 @@ import jade.core.behaviours.OneShotBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.UnreadableException;
+import eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM;
+
 
 public class SendMapStateBeha extends OneShotBehaviour{
 	
@@ -20,12 +22,14 @@ public class SendMapStateBeha extends OneShotBehaviour{
 	private int cptAgents = 0;
 	private List<String> agentNames;
 	private MapRepresentation myMap;
+	private ExploreCoopAgentFSM myAgent;
+
 	
-	public SendMapStateBeha (final AbstractDedaleAgent myagent, List<String> agentNames, MapRepresentation myMap) {
+	public SendMapStateBeha (final AbstractDedaleAgent myagent, MapRepresentation myMap) {
 		super(myagent);
-		
+		this.myAgent = (ExploreCoopAgentFSM) myagent;
 		this.myMap = myMap;
-		this.agentNames = agentNames;
+		this.agentNames = this.myAgent.getVoisins();
 	}
 
 	@Override
@@ -49,6 +53,10 @@ public class SendMapStateBeha extends OneShotBehaviour{
 			cptAgents++;
 			map.addReceiver(msgReceived.getSender());
 			msgReceived = this.myAgent.receive(msgTemplate);
+		}
+		
+		for (String s : this.agentNames) {
+			map.addReceiver(new AID(s,AID.ISLOCALNAME));
 		}
 		
 		SerializableSimpleGraph<String, MapAttribute> sg=this.myMap.getSerializableGraph();

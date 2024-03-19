@@ -1,0 +1,24 @@
+[
+{ 
+  "agentType":"agentCollect",
+  "agentName": "Collect",
+  "communicationRange": 3,
+  "initialLocation": "free",
+  "backPackCapacityGold": 20,
+  "backPackCapacityDiamond":30, 
+  "detectionRadius": 0,
+  "strengthExpertise": 1,
+  "lockPickingExpertise":1
+  },
+{ 
+  "agentType":"agentTanker",
+  "agentName": "Tank",
+  "communicationRange": 3,
+  "initialLocation": "free",
+  "backPackCapacityGold": 100,
+  "backPackCapacityDiamond":100, 
+  "detectionRadius": 0,
+  "strengthExpertise": 1,
+  "lockPickingExpertise":1
+  }
+]

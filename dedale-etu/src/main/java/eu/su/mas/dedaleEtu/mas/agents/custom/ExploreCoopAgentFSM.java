@@ -49,6 +49,8 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	private static final String C = "Walk";
 	private static final String D = "ReceiveMap";
 	private static final String E = "SendMap";
+
+	private List<String> voisins = new ArrayList<String>();
 	
 	
 	/**
@@ -65,7 +67,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		//get the parameters added to the agent at creation (if any)
 		final Object[] args = getArguments();
 		
-		List<String> list_agentNames=new ArrayList<String>();
+		List<String> list_agentNames = new ArrayList<String>();
 		
 		if(args.length==0){
 			System.err.println("Error while creating the agent, names of agent to contact expected");
@@ -92,7 +94,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerFirstState(new SendPingStateBeha(this, list_agentNames), A); // TODO Behaviour
 		fsm.registerState(new StateBeha(), B);
 		fsm.registerState(new SendMapStateBeha(this, TODO, myMap), E);
-		fsm.registerState(new ReceiveMapStateBeha(this, TODO), D); // Trouver comment transférer la liste des voisins
+		fsm.registerState(new ReceiveMapStateBeha(this), D);
 		fsm.registerLastState(new WalkStateBeha(this, myMap, list_agentNames), C);
 		
 		// Register the transitions
@@ -116,6 +118,10 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		
 		System.out.println("the  agent "+this.getLocalName()+ " is started");
 
+	}
+
+	public List<String> getVoisins() {
+		return voisins;
 	}
 	
 	

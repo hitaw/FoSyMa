@@ -10,6 +10,8 @@ import jade.lang.acl.ACLMessage;
 
 public class WaitAnswerStateBeha extends OneShotBehaviour {
 	
+	private static final long serialVersionUID = 8567689731496787661L;
+	
 	private List<String> listReceiver;
 
 	@Override

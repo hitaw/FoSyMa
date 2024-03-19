@@ -15,9 +15,12 @@ import jade.lang.acl.UnreadableException;
 public class ReceiveMapStateBeha extends OneShotBehaviour{
 	
 	private static final long serialVersionUID = 8567689731496787661L;
+	List<String> agentNames;
 	
-	public ReceiveMapStateBeha (final AbstractDedaleAgent myagent, List<String> agentNames) {
+	public ReceiveMapStateBeha (final AbstractDedaleAgent myagent) {
 		super(myagent);
+		myagent = (ExploreCoopAgentFSM) myagent;
+		agentNames = myagent.getVoisins();
 	}
 
 	@Override
