@@ -45,6 +45,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	private static final String C = "Walk";
 	private static final String D = "ReceiveMap";
 	private static final String E = "SendMap";
+	private static final String F = "Hunting";
 
 	private List<String> voisins = new ArrayList<String>();
 	private Date expiration = new Date();
@@ -93,6 +94,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerState(new SendMapStateBeha(this), E);
 		fsm.registerState(new ReceiveMapStateBeha(this), D);
 		fsm.registerState(new WalkStateBeha(this, myMap, list_agentNames), C);
+		fsm.registerLastState(new HuntingStateBeha(this), F);
 		
 		// Register the transitions
 		fsm.registerDefaultTransition(A, B);
@@ -100,6 +102,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerTransition(B, E, 1);
 		fsm.registerTransition(B, B, 0);
 		fsm.registerTransition(C, A, 1);
+		fsm.registerTransition(C, F, 0);
 		fsm.registerDefaultTransition(D, B);
 		fsm.registerDefaultTransition(E, D);
 
@@ -149,5 +152,9 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	public MapRepresentation getMyMap() {
 		return this.myMap;
+	}
+
+	public void setMyMap(MapRepresentation myMap) {
+		this.myMap = myMap;
 	}
 }

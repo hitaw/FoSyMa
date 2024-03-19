@@ -10,6 +10,7 @@ import eu.su.mas.dedale.env.Observation;
 import eu.su.mas.dedale.env.gs.gsLocation;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 
+import eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation.MapAttribute;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
 
@@ -29,6 +30,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 	private MapRepresentation myMap;
 
 	private List<String> list_agentNames;
+	private ExploreCoopAgentFSM myAgent;
 
 /**
  * 
@@ -38,6 +40,7 @@ public class WalkStateBeha extends OneShotBehaviour {
  */
 	public WalkStateBeha(final AbstractDedaleAgent myagent, MapRepresentation myMap,List<String> agentNames) {
 		super(myagent);
+		myAgent = (ExploreCoopAgentFSM) myagent;
 		this.myMap=myMap;
 		this.list_agentNames=agentNames;
 
@@ -46,7 +49,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 	@Override
 	public void action() {
 
-		System.out.println(this.myAgent.getLocalName()+" - WalkStateBeha" + this.myMap);
+		System.out.println(this.myAgent.getLocalName()+" - WalkStateBeha");
 
 		if(this.myMap==null) {
 			this.myMap= new MapRepresentation();
@@ -105,7 +108,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 			}
 
 		}
-
+		myAgent.setMyMap(myMap);
 	}
 	@Override
 	public int onEnd() {

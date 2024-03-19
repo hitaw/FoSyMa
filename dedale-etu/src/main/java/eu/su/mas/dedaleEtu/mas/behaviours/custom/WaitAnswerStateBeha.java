@@ -15,7 +15,7 @@ public class WaitAnswerStateBeha extends OneShotBehaviour {
 	
 	private static final long serialVersionUID = 8567689731496787661L;
 	
-	private List<String> listReceiver = new ArrayList<String>();
+	private List<String> listReceiver;
 	private ExploreCoopAgentFSM myAgent;
 	Boolean end = false;
 
@@ -27,6 +27,7 @@ public class WaitAnswerStateBeha extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+		listReceiver  = new ArrayList<String>();
 	//Reception de ping + envoi du yes
 		Date expiration = myAgent.getExpiration();
 	
@@ -66,10 +67,9 @@ public class WaitAnswerStateBeha extends OneShotBehaviour {
 		ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
 		while (msgReceived != null) {
 			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received yes from "+msgReceived.getSender().getName());
-			msgReceived = this.myAgent.receive(msgTemplate);
 			listReceiver.add(msgReceived.getSender().getName());
+			msgReceived = this.myAgent.receive(msgTemplate);
 		}
-
 		myAgent.setVoisins(listReceiver);
 	}
 

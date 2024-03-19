@@ -1,6 +1,7 @@
 package eu.su.mas.dedaleEtu.mas.behaviours.custom;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import dataStructures.serializableGraph.SerializableSimpleGraph;
@@ -28,6 +29,9 @@ public class SendMapStateBeha extends OneShotBehaviour{
 		super(myagent);
 		this.myAgent = (ExploreCoopAgentFSM) myagent;
 		this.myMap = myAgent.getMyMap();
+		if (this.myMap == null) {
+			System.out.println("Agent "+this.myAgent.getLocalName()+" -- no map");
+		}
 		this.agentNames = this.myAgent.getVoisins();
 	}
 
@@ -57,14 +61,14 @@ public class SendMapStateBeha extends OneShotBehaviour{
 		for (String s : this.agentNames) {
 			map.addReceiver(new AID(s,AID.ISLOCALNAME));
 		}
-		
-		SerializableSimpleGraph<String, MapAttribute> sg=this.myMap.getSerializableGraph();
+		System.out.println("Agent "+this.myAgent.getLocalName()+" -- map : "+this.myAgent.getMyMap());
+		SerializableSimpleGraph<String, MapAttribute> sg=this.myAgent.getMyMap().getSerializableGraph();
 		try {					
 			map.setContentObject(sg);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		((AbstractDedaleAgent)this.myAgent).sendMessage(map);
-		
+		this.myAgent.setVoisins(new ArrayList<String>());
 	}
 }
