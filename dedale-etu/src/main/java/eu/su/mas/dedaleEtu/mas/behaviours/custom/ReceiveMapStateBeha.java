@@ -43,5 +43,4 @@ public class ReceiveMapStateBeha extends OneShotBehaviour{
 			this.myAgent.mergeMap(sgreceived);
 		}	
 	}
-
 }

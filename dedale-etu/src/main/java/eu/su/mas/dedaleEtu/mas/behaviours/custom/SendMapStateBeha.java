@@ -61,7 +61,6 @@ public class SendMapStateBeha extends OneShotBehaviour{
 		for (String s : this.agentNames) {
 			map.addReceiver(new AID(s,AID.ISLOCALNAME));
 		}
-		System.out.println("Agent "+this.myAgent.getLocalName()+" -- map : "+this.myAgent.getMyMap());
 		SerializableSimpleGraph<String, MapAttribute> sg=this.myAgent.getMyMap().getSerializableGraph();
 		try {					
 			map.setContentObject(sg);

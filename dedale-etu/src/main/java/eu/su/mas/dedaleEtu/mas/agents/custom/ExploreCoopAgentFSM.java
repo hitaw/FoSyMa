@@ -58,8 +58,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	 *	 		2) add the behaviours
 	 *          
 	 */
-	protected void setup(){		
-
+	protected void setup(){
 		super.setup();
 		
 		//get the parameters added to the agent at creation (if any)
@@ -79,12 +78,6 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		}
 
 		List<Behaviour> lb=new ArrayList<Behaviour>();
-		
-		/************************************************
-		 * 
-		 * ADD the behaviors of the Dummy Moving Agent
-		 * 
-		 ************************************************/
 		
 		FSMBehaviour fsm = new FSMBehaviour(this);
 		

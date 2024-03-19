@@ -39,7 +39,7 @@ public class SendPingStateBeha extends OneShotBehaviour {
 
 		// Date set à now + 1s
 		Date exp = new Date();
-		exp.setTime(exp.getTime() + 1);
+		exp.setTime(exp.getTime() + 100);
 		myAgent.setExpiration(exp);
 	}
 
