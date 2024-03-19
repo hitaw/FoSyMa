@@ -29,45 +29,39 @@ public class SendMapStateBeha extends OneShotBehaviour{
 		super(myagent);
 		this.myAgent = (ExploreCoopAgentFSM) myagent;
 		this.myMap = myAgent.getMyMap();
-		if (this.myMap == null) {
-			System.out.println("Agent "+this.myAgent.getLocalName()+" -- no map");
-		}
-		this.agentNames = this.myAgent.getVoisins();
 	}
 
 	@Override
 	public void action() {
-		//Reception du yes + envoi de la map
-		// wait
-		this.myAgent.doWait(100);
-		
-		MessageTemplate msgTemplate = MessageTemplate.and(
-				MessageTemplate.MatchProtocol("YES"),
-				MessageTemplate.MatchPerformative(ACLMessage.AGREE));
-		
-		ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
-		
+		this.agentNames = this.myAgent.getVoisins();
+		//envoi de la map
+
+//		MessageTemplate msgTemplate = MessageTemplate.and(
+//				MessageTemplate.MatchProtocol("YES"),
+//				MessageTemplate.MatchPerformative(ACLMessage.AGREE));
+//
+//		ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
+//
 		ACLMessage map = new ACLMessage(ACLMessage.INFORM);
 		map.setProtocol("SHARE-TOPO");
 		map.setSender(this.myAgent.getAID());
-		
-		while (msgReceived != null) {
-		
-			cptAgents++;
-			map.addReceiver(msgReceived.getSender());
-			msgReceived = this.myAgent.receive(msgTemplate);
-		}
+
+//		while (msgReceived != null) {
+//			cptAgents++;
+//			map.addReceiver(msgReceived.getSender());
+//			msgReceived = this.myAgent.receive(msgTemplate);
+//		}
 		
 		for (String s : this.agentNames) {
 			map.addReceiver(new AID(s,AID.ISLOCALNAME));
 		}
-		SerializableSimpleGraph<String, MapAttribute> sg=this.myAgent.getMyMap().getSerializableGraph();
+		SerializableSimpleGraph<String, MapAttribute> sg = this.myAgent.getMyMap().getSerializableGraph();
 		try {					
 			map.setContentObject(sg);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		((AbstractDedaleAgent)this.myAgent).sendMessage(map);
-		this.myAgent.setVoisins(new ArrayList<String>());
+		System.out.println("Agent "+this.myAgent.getLocalName()+" -- map sent to "+this.agentNames);
 	}
 }

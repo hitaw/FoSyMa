@@ -65,7 +65,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		final Object[] args = getArguments();
 		
 		List<String> list_agentNames = new ArrayList<String>();
-		
+
 		if(args.length==0){
 			System.err.println("Error while creating the agent, names of agent to contact expected");
 			System.exit(-1);
@@ -86,7 +86,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerState(new WaitAnswerStateBeha(this), B);
 		fsm.registerState(new SendMapStateBeha(this), E);
 		fsm.registerState(new ReceiveMapStateBeha(this), D);
-		fsm.registerState(new WalkStateBeha(this, myMap, list_agentNames), C);
+		fsm.registerState(new WalkStateBeha(this, list_agentNames), C);
 		fsm.registerLastState(new HuntingStateBeha(this), F);
 		
 		// Register the transitions

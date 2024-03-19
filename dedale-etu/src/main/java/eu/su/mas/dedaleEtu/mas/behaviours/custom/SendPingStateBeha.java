@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.List;
 
 import eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM;
+import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
 import jade.core.behaviours.OneShotBehaviour;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import jade.core.AID;
@@ -26,6 +27,9 @@ public class SendPingStateBeha extends OneShotBehaviour {
 	public void action() {
 		
 		//Envoi du ping
+		if(this.myAgent.getMyMap()==null) {
+			this.myAgent.setMyMap(new MapRepresentation());
+		}
 		
 		ACLMessage ping = new ACLMessage(ACLMessage.REQUEST);
 		System.out.println("Agent "+this.myAgent.getLocalName()+" -- send ping to "+receivers);

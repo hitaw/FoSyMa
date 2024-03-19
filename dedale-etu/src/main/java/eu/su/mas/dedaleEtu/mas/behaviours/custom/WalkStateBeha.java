@@ -15,10 +15,6 @@ import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation.MapAttribute;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
 
 import jade.core.behaviours.OneShotBehaviour;
-import jade.lang.acl.ACLMessage;
-import jade.lang.acl.MessageTemplate;
-import jade.lang.acl.UnreadableException;
-
 
 public class WalkStateBeha extends OneShotBehaviour {	
 
@@ -35,19 +31,18 @@ public class WalkStateBeha extends OneShotBehaviour {
 /**
  * 
  * @param myagent reference to the agent we are adding this behavior to
- * @param myMap known map of the world the agent is living in
  * @param agentNames name of the agents to share the map with
  */
-	public WalkStateBeha(final AbstractDedaleAgent myagent, MapRepresentation myMap,List<String> agentNames) {
+	public WalkStateBeha(final AbstractDedaleAgent myagent, List<String> agentNames) {
 		super(myagent);
 		myAgent = (ExploreCoopAgentFSM) myagent;
-		this.myMap=myMap;
 		this.list_agentNames=agentNames;
 
 	}
 
 	@Override
 	public void action() {
+		this.myMap=myAgent.getMyMap();
 
 		System.out.println(this.myAgent.getLocalName()+" - WalkStateBeha");
 
@@ -65,11 +60,11 @@ public class WalkStateBeha extends OneShotBehaviour {
 			/**
 			 * Just added here to let you see what the agent is doing, otherwise he will be too quick
 			 */
-			//try {
-			//	this.myAgent.doWait(1000);
-			//} catch (Exception e) {
-			//	e.printStackTrace();
-			//}
+			try {
+				this.myAgent.doWait(1000);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 
 			//1) remove the current node from openlist and add it to closedNodes.
 			this.myMap.addNode(myPosition.getLocationId(), MapAttribute.closed);

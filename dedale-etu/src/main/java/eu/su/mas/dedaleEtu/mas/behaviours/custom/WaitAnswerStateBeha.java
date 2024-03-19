@@ -54,7 +54,7 @@ public class WaitAnswerStateBeha extends OneShotBehaviour {
 		while (pingReceived != null) {
 			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received ping from "+pingReceived.getSender().getName());
 			yes.addReceiver(pingReceived.getSender());
-			listReceiver.add(pingReceived.getSender().getName());
+			listReceiver.add(pingReceived.getSender().getLocalName());
 			pingReceived = this.myAgent.receive(pingTemplate);
 		}
 		if (yes.getAllReceiver().hasNext()) {
@@ -67,7 +67,7 @@ public class WaitAnswerStateBeha extends OneShotBehaviour {
 		ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
 		while (msgReceived != null) {
 			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received yes from "+msgReceived.getSender().getName());
-			listReceiver.add(msgReceived.getSender().getName());
+			listReceiver.add(msgReceived.getSender().getLocalName());
 			msgReceived = this.myAgent.receive(msgTemplate);
 		}
 		myAgent.setVoisins(listReceiver);

@@ -1,6 +1,8 @@
 package eu.su.mas.dedaleEtu.mas.behaviours.custom;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import dataStructures.serializableGraph.SerializableSimpleGraph;
@@ -19,7 +21,6 @@ public class ReceiveMapStateBeha extends OneShotBehaviour{
 	List<String> agentNames;
 	private ExploreCoopAgentFSM myAgent;
 
-
 	public ReceiveMapStateBeha (final AbstractDedaleAgent myagent) {
 		super(myagent);
 		myAgent = (ExploreCoopAgentFSM) myagent;
@@ -28,19 +29,31 @@ public class ReceiveMapStateBeha extends OneShotBehaviour{
 
 	@Override
 	public void action() {
+		Date exp = new Date();
+		exp.setTime(exp.getTime() + 1000);
+
 		// Reception de la map
+		int nbCartesAttendues = myAgent.getVoisins().size();
+		int cptAgents = 0;
+
 		MessageTemplate msgTemplate = MessageTemplate.and(
-		MessageTemplate.MatchProtocol("SHARE-TOPO"),
-		MessageTemplate.MatchPerformative(ACLMessage.INFORM));
-		ACLMessage shareReceived=this.myAgent.receive(msgTemplate);
-		if (shareReceived!=null) {
-			SerializableSimpleGraph<String, MapAttribute> sgreceived=null;
-			try {
-				sgreceived = (SerializableSimpleGraph<String, MapAttribute>)shareReceived.getContentObject();
-			} catch (UnreadableException e) {
-				e.printStackTrace();
+				MessageTemplate.MatchProtocol("SHARE-TOPO"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+
+		while ((cptAgents < nbCartesAttendues) && (new Date().before(exp)) ){
+			ACLMessage shareReceived=this.myAgent.receive(msgTemplate);
+			if (shareReceived!=null) {
+				SerializableSimpleGraph<String, MapAttribute> sgreceived=null;
+				try {
+					sgreceived = (SerializableSimpleGraph<String, MapAttribute>)shareReceived.getContentObject();
+					System.out.println("Agent "+this.myAgent.getLocalName()+" -- received map from "+shareReceived.getSender().getName());
+				} catch (UnreadableException e) {
+					e.printStackTrace();
+				}
+				this.myAgent.mergeMap(sgreceived);
+				cptAgents++;
 			}
-			this.myAgent.mergeMap(sgreceived);
-		}	
+		}
+		this.myAgent.setVoisins(new ArrayList<String>());
 	}
 }
