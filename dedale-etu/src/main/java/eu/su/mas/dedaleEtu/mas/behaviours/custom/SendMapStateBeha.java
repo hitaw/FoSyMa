@@ -11,7 +11,6 @@ import jade.core.AID;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import jade.lang.acl.UnreadableException;
 import eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM;
 
 
@@ -25,10 +24,10 @@ public class SendMapStateBeha extends OneShotBehaviour{
 	private ExploreCoopAgentFSM myAgent;
 
 	
-	public SendMapStateBeha (final AbstractDedaleAgent myagent, MapRepresentation myMap) {
+	public SendMapStateBeha (final AbstractDedaleAgent myagent) {
 		super(myagent);
 		this.myAgent = (ExploreCoopAgentFSM) myagent;
-		this.myMap = myMap;
+		this.myMap = myAgent.getMyMap();
 		this.agentNames = this.myAgent.getVoisins();
 	}
 

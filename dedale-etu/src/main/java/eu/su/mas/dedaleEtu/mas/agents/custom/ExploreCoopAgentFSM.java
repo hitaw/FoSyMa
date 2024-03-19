@@ -1,16 +1,12 @@
 package eu.su.mas.dedaleEtu.mas.agents.custom;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
+import dataStructures.serializableGraph.SerializableSimpleGraph;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import eu.su.mas.dedale.mas.agent.behaviours.platformManagment.*;
 
-import eu.su.mas.dedaleEtu.mas.behaviours.ExploCoopBehaviour;
-import eu.su.mas.dedaleEtu.mas.behaviours.custom.SendMapStateBeha;
-import eu.su.mas.dedaleEtu.mas.behaviours.custom.ReceiveMapStateBeha;
-import eu.su.mas.dedaleEtu.mas.behaviours.custom.SendPingStateBeha;
-import eu.su.mas.dedaleEtu.mas.behaviours.custom.WalkStateBeha;
+import eu.su.mas.dedaleEtu.mas.behaviours.custom.*;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
 
 import jade.core.behaviours.Behaviour;
@@ -51,6 +47,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	private static final String E = "SendMap";
 
 	private List<String> voisins = new ArrayList<String>();
+	private Date expiration = new Date();
 	
 	
 	/**
@@ -91,17 +88,17 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		FSMBehaviour fsm = new FSMBehaviour(this);
 		
 		// Define the different states and behaviour
-		fsm.registerFirstState(new SendPingStateBeha(this, list_agentNames), A); // TODO Behaviour
-		fsm.registerState(new StateBeha(), B);
-		fsm.registerState(new SendMapStateBeha(this, TODO, myMap), E);
+		fsm.registerFirstState(new SendPingStateBeha(this, list_agentNames), A);
+		fsm.registerState(new WaitAnswerStateBeha(this), B);
+		fsm.registerState(new SendMapStateBeha(this), E);
 		fsm.registerState(new ReceiveMapStateBeha(this), D);
-		fsm.registerLastState(new WalkStateBeha(this, myMap, list_agentNames), C);
+		fsm.registerState(new WalkStateBeha(this, myMap, list_agentNames), C);
 		
 		// Register the transitions
 		fsm.registerDefaultTransition(A, B);
-		fsm.registerDefaultTransition(B, B);
 		fsm.registerTransition(B, C, 2);
 		fsm.registerTransition(B, E, 1);
+		fsm.registerTransition(B, B, 0);
 		fsm.registerTransition(C, A, 1);
 		fsm.registerDefaultTransition(D, B);
 		fsm.registerDefaultTransition(E, D);
@@ -121,9 +118,36 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	}
 
 	public List<String> getVoisins() {
+		Set<String> set = new HashSet<>(voisins);
+		voisins.clear();
+		voisins.addAll(set);
 		return voisins;
 	}
-	
-	
-	
+    public void setVoisins(List<String> v) {
+        voisins = v;
+    }
+
+    public void addVoisin(String s) {
+        voisins.add(s);
+    }
+
+    public void removeVoisin(String s) {
+        voisins.remove(s);
+    }
+
+	public void mergeMap(SerializableSimpleGraph<String, MapRepresentation.MapAttribute> sgreceived) {
+		this.myMap.mergeMap(sgreceived);
+	}
+
+	public Date getExpiration() {
+		return expiration;
+	}
+
+	public void setExpiration(Date expiration) {
+		this.expiration = expiration;
+	}
+
+	public MapRepresentation getMyMap() {
+		return this.myMap;
+	}
 }

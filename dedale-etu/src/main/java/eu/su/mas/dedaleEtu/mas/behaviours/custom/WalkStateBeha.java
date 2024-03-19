@@ -11,7 +11,6 @@ import eu.su.mas.dedale.env.gs.gsLocation;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation.MapAttribute;
-import eu.su.mas.dedaleEtu.mas.behaviours.ShareMapBehaviour;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
 
 import jade.core.behaviours.OneShotBehaviour;
@@ -41,16 +40,16 @@ public class WalkStateBeha extends OneShotBehaviour {
 		super(myagent);
 		this.myMap=myMap;
 		this.list_agentNames=agentNames;
-		
+
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void action() {
 
+		System.out.println(this.myAgent.getLocalName()+" - WalkStateBeha" + this.myMap);
+
 		if(this.myMap==null) {
 			this.myMap= new MapRepresentation();
-			this.myAgent.addBehaviour(new ShareMapBehaviour(this.myAgent,500,this.myMap,list_agentNames));
 		}
 
 		//0) Retrieve the current position
@@ -79,7 +78,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 				Location accessibleNode=iter.next().getLeft();
 				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId());
 				//the node may exist, but not necessarily the edge
-				if (myPosition.getLocationId()!=accessibleNode.getLocationId()) {
+				if (myPosition.getLocationId() != accessibleNode.getLocationId()) {
 					this.myMap.addEdge(myPosition.getLocationId(), accessibleNode.getLocationId());
 					if (nextNodeId==null && isNewNode) nextNodeId=accessibleNode.getLocationId();
 				}
@@ -101,28 +100,18 @@ public class WalkStateBeha extends OneShotBehaviour {
 				}else {
 					//System.out.println("nextNode notNUll - "+this.myAgent.getLocalName()+"-- list= "+this.myMap.getOpenNodes()+"\n -- nextNode: "+nextNode);
 				}
-				
-				//5) At each time step, the agent check if he received a graph from a team mate. 	
-				// If it was written properly, this sharing action should be in a dedicated behavior set.
-				MessageTemplate msgTemplate=MessageTemplate.and(
-						MessageTemplate.MatchProtocol("SHARE-TOPO"),
-						MessageTemplate.MatchPerformative(ACLMessage.INFORM));
-				ACLMessage msgReceived=this.myAgent.receive(msgTemplate);
-				if (msgReceived!=null) {
-					SerializableSimpleGraph<String, MapAttribute> sgreceived=null;
-					try {
-						sgreceived = (SerializableSimpleGraph<String, MapAttribute>)msgReceived.getContentObject();
-					} catch (UnreadableException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					this.myMap.mergeMap(sgreceived);
-				}
 
 				((AbstractDedaleAgent)this.myAgent).moveTo(new gsLocation(nextNodeId));
 			}
 
 		}
 
+	}
+	@Override
+	public int onEnd() {
+		if (myMap.hasOpenNode()) {
+			return 1;
+		}
+		return 0;
 	}
 }

@@ -5,6 +5,7 @@ import java.util.List;
 
 import dataStructures.serializableGraph.SerializableSimpleGraph;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
+import eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation.MapAttribute;
 import jade.core.AID;
 import jade.core.behaviours.OneShotBehaviour;
@@ -16,19 +17,19 @@ public class ReceiveMapStateBeha extends OneShotBehaviour{
 	
 	private static final long serialVersionUID = 8567689731496787661L;
 	List<String> agentNames;
-	
+	private ExploreCoopAgentFSM myAgent;
+
+
 	public ReceiveMapStateBeha (final AbstractDedaleAgent myagent) {
 		super(myagent);
-		myagent = (ExploreCoopAgentFSM) myagent;
-		agentNames = myagent.getVoisins();
+		myAgent = (ExploreCoopAgentFSM) myagent;
+		agentNames = myAgent.getVoisins();
 	}
 
 	@Override
 	public void action() {
-		
 		// Reception de la map
-		
-		MessageTemplate shareTemplate=MessageTemplate.and(
+		MessageTemplate msgTemplate = MessageTemplate.and(
 		MessageTemplate.MatchProtocol("SHARE-TOPO"),
 		MessageTemplate.MatchPerformative(ACLMessage.INFORM));
 		ACLMessage shareReceived=this.myAgent.receive(msgTemplate);
@@ -39,7 +40,7 @@ public class ReceiveMapStateBeha extends OneShotBehaviour{
 			} catch (UnreadableException e) {
 				e.printStackTrace();
 			}
-			this.myMap.mergeMap(sgreceived);
+			this.myAgent.mergeMap(sgreceived);
 		}	
 	}
 
