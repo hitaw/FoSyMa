@@ -52,7 +52,7 @@ public class WaitAnswerStateBeha extends OneShotBehaviour {
 		yes.setSender(this.myAgent.getAID());
 		System.out.println("Agent " +this.myAgent.getLocalName() + "-- is looking for ping");
 		while (pingReceived != null) {
-			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received ping from "+pingReceived.getSender().getName());
+			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received ping from "+pingReceived.getSender().getLocalName());
 			yes.addReceiver(pingReceived.getSender());
 			listReceiver.add(pingReceived.getSender().getLocalName());
 			pingReceived = this.myAgent.receive(pingTemplate);

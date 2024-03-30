@@ -134,6 +134,18 @@ public class MapRepresentation implements Serializable {
 		}
 	}
 
+	public synchronized Edge removeEdge(String from, String to) {
+		Edge edge = null;
+		try {
+			this.nbEdges--;
+			edge = this.g.removeEdge(from, to);
+		}
+		catch (ElementNotFoundException e){
+			System.err.println("Edge cannot exist, one node missing");
+		}
+		return edge;
+	}
+
 	/**
 	 * Compute the shortest Path from idFrom to IdTo. The computation is currently
 	 * not very efficient
@@ -272,7 +284,7 @@ public class MapRepresentation implements Serializable {
 	private synchronized void openGui() {
 		this.viewer = new FxViewer(this.g, FxViewer.ThreadingModel.GRAPH_IN_ANOTHER_THREAD);// GRAPH_IN_GUI_THREAD)
 		viewer.enableAutoLayout();
-		viewer.setCloseFramePolicy(FxViewer.CloseFramePolicy.CLOSE_VIEWER);
+		viewer.setCloseFramePolicy(CloseFramePolicy.CLOSE_VIEWER);
 		viewer.addDefaultView(true);
 
 		g.display();

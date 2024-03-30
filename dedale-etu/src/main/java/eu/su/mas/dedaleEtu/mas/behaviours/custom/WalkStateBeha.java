@@ -15,6 +15,7 @@ import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation.MapAttribute;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
 
 import jade.core.behaviours.OneShotBehaviour;
+import org.graphstream.graph.Edge;
 
 public class WalkStateBeha extends OneShotBehaviour {	
 
@@ -27,6 +28,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 
 	private List<String> list_agentNames;
 	private ExploreCoopAgentFSM myAgent;
+	public static final int MaxStuck = 5;
 
 /**
  * 
@@ -43,11 +45,16 @@ public class WalkStateBeha extends OneShotBehaviour {
 	@Override
 	public void action() {
 		this.myMap=myAgent.getMyMap();
+		myAgent.ageRemovedEdges(); // On vieillit les arêtes retirées
+		Edge ed = this.myAgent.getEdge(); // Un effectue cette action une fois par itération donc, et on ne peut enlever qu'une arête par itération donc une seule peut avoir dépassé le temps limite
+		if (ed != null) {
+			this.myMap.addEdge(ed.getSourceNode().getId(), ed.getTargetNode().getId());
+		}
 
 		System.out.println(this.myAgent.getLocalName()+" - WalkStateBeha");
 
 		if(this.myMap==null) {
-			this.myMap= new MapRepresentation();
+			this.myMap = new MapRepresentation();
 		}
 
 		//0) Retrieve the current position
@@ -86,7 +93,12 @@ public class WalkStateBeha extends OneShotBehaviour {
 			if (!this.myMap.hasOpenNode()){
 				//Explo finished
 				System.out.println(this.myAgent.getLocalName()+" - Exploration successufully done, behaviour removed.");
-			}else{
+			} else {
+				if (myAgent.getStuck() > MaxStuck) {
+					myAgent.setStuck(0);
+					Edge e = myMap.removeEdge(myPosition.getLocationId(), this.myMap.getShortestPathToClosestOpenNode(myPosition.getLocationId()).get(0));
+					myAgent.addRemovedEdge(e);
+				}
 				//4) select next move.
 				//4.1 If there exist one open node directly reachable, go for it,
 				//	 otherwise choose one from the openNode list, compute the shortestPath and go for it
@@ -98,8 +110,11 @@ public class WalkStateBeha extends OneShotBehaviour {
 				}else {
 					//System.out.println("nextNode notNUll - "+this.myAgent.getLocalName()+"-- list= "+this.myMap.getOpenNodes()+"\n -- nextNode: "+nextNode);
 				}
-
-				((AbstractDedaleAgent)this.myAgent).moveTo(new gsLocation(nextNodeId));
+				if (((AbstractDedaleAgent)this.myAgent).moveTo(new gsLocation(nextNodeId))) {
+					myAgent.setStuck(0);
+				} else {
+					myAgent.setStuck(myAgent.getStuck() + 1);
+				}
 			}
 
 		}

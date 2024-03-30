@@ -46,7 +46,8 @@ public class ReceiveMapStateBeha extends OneShotBehaviour{
 				SerializableSimpleGraph<String, MapAttribute> sgreceived=null;
 				try {
 					sgreceived = (SerializableSimpleGraph<String, MapAttribute>)shareReceived.getContentObject();
-					System.out.println("Agent "+this.myAgent.getLocalName()+" -- received map from "+shareReceived.getSender().getName());
+					System.out.println("Agent "+this.myAgent.getLocalName()+" -- received map from "+shareReceived.getSender().getLocalName());
+					myAgent.addRecent(shareReceived.getSender().getLocalName());
 				} catch (UnreadableException e) {
 					e.printStackTrace();
 				}

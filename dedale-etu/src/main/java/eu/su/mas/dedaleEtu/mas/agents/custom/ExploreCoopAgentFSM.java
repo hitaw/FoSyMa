@@ -11,6 +11,7 @@ import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
 
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.FSMBehaviour;
+import org.graphstream.graph.Edge;
 
 /**
  * <pre>
@@ -37,6 +38,7 @@ import jade.core.behaviours.FSMBehaviour;
 public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	private static final long serialVersionUID = -7969469610241668140L;
+	public static final int ExchangeTimeout = 10;
 	private MapRepresentation myMap;
 	
 	// State names 
@@ -48,7 +50,12 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	private static final String F = "Hunting";
 
 	private List<String> voisins = new ArrayList<String>();
+	private Map<String,Integer> recents = new HashMap<String,Integer>();
 	private Date expiration = new Date();
+
+	// the number of times the agent tried to go to the same node and failed
+	private int stuck = 0;
+	private Map<Edge, Integer> edgesRemoved = new HashMap<Edge, Integer>();
 	
 	
 	/**
@@ -123,7 +130,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
         voisins = v;
     }
 
-    public void addVoisin(String s) {
+    public void addVoisin(String s, Integer i) {
         voisins.add(s);
     }
 
@@ -149,5 +156,56 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	public void setMyMap(MapRepresentation myMap) {
 		this.myMap = myMap;
+	}
+
+	public Set<String> getRecents() {
+		return recents.keySet();
+	}
+
+	public void setRecents(Map<String, Integer> recents) {
+		this.recents = recents;
+	}
+	public void addRecent(String s) {
+		recents.put(s, 0);
+	}
+
+	public void ageRecent() {
+		for (String key : recents.keySet()) {
+			recents.put(key, recents.get(key) + 1);
+			if (recents.get(key) > ExchangeTimeout) {
+				recents.remove(key);
+			}
+		}
+	}
+
+	public int getStuck() {
+		return stuck;
+	}
+
+	public void setStuck(int stuck) {
+		if (stuck!=this.stuck) System.out.println("Agent "+this.getLocalName()+" -- stuck for "+stuck+ " steps");
+		this.stuck = stuck;
+	}
+	public Edge getEdge() {
+		Edge e = null;
+		for (Edge key : edgesRemoved.keySet()) {
+			if (edgesRemoved.get(key) > WalkStateBeha.MaxStuck){
+				e = key;
+				edgesRemoved.remove(key);
+				System.out.println("Agent "+this.getLocalName()+" -- added edge "+e.getId()+"\n");
+				break;
+			}
+		}
+		return e;
+	}
+	public void addRemovedEdge(Edge e) {
+		System.out.println("Agent "+this.getLocalName()+" -- removed edge "+e.getId());
+		edgesRemoved.put(e, 0);
+	}
+
+	public void ageRemovedEdges() {
+		for (Edge key : edgesRemoved.keySet()) {
+			edgesRemoved.put(key, edgesRemoved.get(key) + 1);
+		}
 	}
 }

@@ -2,6 +2,7 @@ package eu.su.mas.dedaleEtu.mas.behaviours.custom;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 import eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
@@ -25,6 +26,7 @@ public class SendPingStateBeha extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+		this.myAgent.ageRecent();
 		
 		//Envoi du ping
 		if(this.myAgent.getMyMap()==null) {
@@ -35,8 +37,14 @@ public class SendPingStateBeha extends OneShotBehaviour {
 		System.out.println("Agent "+this.myAgent.getLocalName()+" -- send ping to "+receivers);
 		ping.setSender(this.myAgent.getAID());
 		ping.setProtocol("PING");
-		
+
+		// Ajout des receivers
+		//si on a parlé à un agent il y a pas longtemps, on ne le ping pas
+		Set<String> recents = myAgent.getRecents();
 		for (String agentName : receivers) {
+			if (recents.contains(agentName)) {
+				continue;
+			}
 			ping.addReceiver(new AID(agentName, AID.ISLOCALNAME));
 		}
 		((AbstractDedaleAgent)this.myAgent).sendMessage(ping);
