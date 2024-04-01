@@ -2,9 +2,11 @@ package eu.su.mas.dedaleEtu.mas.behaviours.custom;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import dataStructures.serializableGraph.SerializableSimpleGraph;
+import dataStructures.tuple.Couple;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation.MapAttribute;
@@ -40,7 +42,7 @@ public class SendMapStateBeha extends OneShotBehaviour{
 			map.setSender(this.myAgent.getAID());
 
 			map.addReceiver(new AID(s,AID.ISLOCALNAME));
-			SerializableSimpleGraph<String, MapAttribute> sg = this.myAgent.getDiffAgentMap(s);
+			SerializableSimpleGraph<String, Couple<MapAttribute, Date>> sg = this.myAgent.getDiffAgentMap(s);
 			if (sg != null) {
 				this.myAgent.updateAgentMap(s, sg);
 				try {

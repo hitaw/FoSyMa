@@ -1,11 +1,7 @@
 package eu.su.mas.dedaleEtu.mas.knowledge;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.graphstream.algorithm.Dijkstra;
@@ -58,13 +54,14 @@ public class MapRepresentation implements Serializable {
 			+ " size-mode:fit;text-alignment:under; text-size:14;text-color:white;text-background-mode:rounded-box;text-background-color:black;}";
 	private String nodeStyle_open = "node.agent {" + "fill-color: forestgreen;" + "}";
 	private String nodeStyle_agent = "node.open {" + "fill-color: blue;" + "}";
-	private String nodeStyle = defaultNodeStyle + nodeStyle_agent + nodeStyle_open;
+	private String nodeStyle_stench = "node.stench {" + "fill-color: yellow;" + "}";
+	private String nodeStyle = defaultNodeStyle + nodeStyle_agent + nodeStyle_open + nodeStyle_stench;
 
 	private Graph g; // data structure non serializable
 	private Viewer viewer; // ref to the display, non-serializable
 	private Integer nbEdges;// used to generate the edges ids
 
-	private SerializableSimpleGraph<String, MapAttribute> sg;// used as a temporary dataStructure during migration
+	private SerializableSimpleGraph<String, Couple<MapAttribute, Date>> sg;// used as a temporary dataStructure during migration
 
 	public MapRepresentation() {
 		// System.setProperty("org.graphstream.ui.renderer","org.graphstream.ui.j2dviewer.J2DGraphRenderer");
@@ -111,6 +108,7 @@ public class MapRepresentation implements Serializable {
 		n.clearAttributes();
 		n.setAttribute("ui.class", mapAttribute.toString());
 		n.setAttribute("ui.label", id);
+		n.setAttribute("stench.date", null);
 	}
 
 	/**
@@ -244,11 +242,11 @@ public class MapRepresentation implements Serializable {
 	 * Before sending the agent knowledge of the map it should be serialized.
 	 */
 	private void serializeGraphTopology() {
-		this.sg = new SerializableSimpleGraph<String, MapAttribute>();
+		this.sg = new SerializableSimpleGraph<String, Couple<MapAttribute,Date>>();
 		Iterator<Node> iter = this.g.iterator();
 		while (iter.hasNext()) {
 			Node n = iter.next();
-			sg.addNode(n.getId(), MapAttribute.valueOf((String) n.getAttribute("ui.class")));
+			sg.addNode(n.getId(), new Couple(MapAttribute.valueOf((String) n.getAttribute("ui.class")), n.getAttribute("stench.date")));
 		}
 		Iterator<Edge> iterE = this.g.edges().iterator();
 		while (iterE.hasNext()) {
@@ -259,13 +257,13 @@ public class MapRepresentation implements Serializable {
 		}
 	}
 
-	public synchronized SerializableSimpleGraph<String, MapAttribute> getSerializableGraph() {
+	public synchronized SerializableSimpleGraph<String, Couple<MapAttribute, Date>> getSerializableGraph() {
 		serializeGraphTopology();
 		return this.sg;
 	}
 
 	/**
-	 * After migration we load the serialized data and recreate the non serializable
+	 * After migration we load the serialized data and recreate the non-serializable
 	 * components (Gui,..)
 	 */
 	public synchronized void loadSavedData() {
@@ -276,8 +274,9 @@ public class MapRepresentation implements Serializable {
 		openGui();
 
 		Integer nbEd = 0;
-		for (SerializableNode<String, MapAttribute> n : this.sg.getAllNodes()) {
-			this.g.addNode(n.getNodeId()).setAttribute("ui.class", n.getNodeContent().toString());
+		for (SerializableNode<String, Couple<MapAttribute, Date>> n : this.sg.getAllNodes()) {
+			this.g.addNode(n.getNodeId()).setAttribute("ui.class", n.getNodeContent().getLeft().toString());
+			this.g.getNode(n.getNodeId()).setAttribute("stench.date", n.getNodeContent().getRight());
 			for (String s : this.sg.getEdges(n.getNodeId())) {
 				this.g.addEdge(nbEd.toString(), n.getNodeId(), s);
 				nbEd++;
@@ -287,7 +286,7 @@ public class MapRepresentation implements Serializable {
 	}
 
 	/**
-	 * Method called before migration to kill all non serializable graphStream
+	 * Method called before migration to kill all non-serializable graphStream
 	 * components
 	 */
 	private synchronized void closeGui() {
@@ -317,11 +316,11 @@ public class MapRepresentation implements Serializable {
 		g.display();
 	}
 
-	public void mergeMap(SerializableSimpleGraph<String, MapAttribute> sgreceived) {
+	public void mergeMap(SerializableSimpleGraph<String, Couple<MapAttribute, Date>> sgreceived) {
 		// System.out.println("You should decide what you want to save and how");
 		// System.out.println("We currently blindly add the topology");
 
-		for (SerializableNode<String, MapAttribute> n : sgreceived.getAllNodes()) {
+		for (SerializableNode<String, Couple<MapAttribute, Date>> n : sgreceived.getAllNodes()) {
 			// System.out.println(n);
 			boolean alreadyIn = false;
 			// 1 Add the node
@@ -334,7 +333,8 @@ public class MapRepresentation implements Serializable {
 			}
 			if (!alreadyIn) {
 				newnode.setAttribute("ui.label", newnode.getId());
-				newnode.setAttribute("ui.class", n.getNodeContent().toString());
+				newnode.setAttribute("ui.class", n.getNodeContent().getLeft().toString());
+				newnode.setAttribute("stench.date", n.getNodeContent().getRight());
 			} else {
 				newnode = this.g.getNode(n.getNodeId());
 				// 3 check its attribute. If it is below the one received, update it.
@@ -342,11 +342,18 @@ public class MapRepresentation implements Serializable {
 						|| n.getNodeContent().toString() == MapAttribute.closed.toString()) {
 					newnode.setAttribute("ui.class", MapAttribute.closed.toString());
 				}
+				// if the date of the stench is more recent, update it
+				if (n.getNodeContent().getRight() != null) {
+					if ((Date) newnode.getAttribute("stench.date") == null
+							|| ((Date) newnode.getAttribute("stench.date")).before(n.getNodeContent().getRight())) {
+						newnode.setAttribute("stench.date", n.getNodeContent().getRight());
+					}
+				}
 			}
 		}
 
 		// 4 now that all nodes are added, we can add edges
-		for (SerializableNode<String, MapAttribute> n : sgreceived.getAllNodes()) {
+		for (SerializableNode<String, Couple<MapAttribute, Date>> n : sgreceived.getAllNodes()) {
 			for (String s : sgreceived.getEdges(n.getNodeId())) {
 				addEdge(n.getNodeId(), s);
 			}
@@ -357,11 +364,11 @@ public class MapRepresentation implements Serializable {
 	/**
 	 * If the given map has additional nodes compared to *this* it won't be taken. This only searches for elements that were added on *this*. It is meant to be used to update m
 	 * For example : if it worked on lists : [a,b,c].getDiff([a,b,d]) would return [c]
-	 *
+	 * TODO renvoyer les stench aussi
 	 * @param m The smaller map to compare with this
 	 * @return the nodes and edges that were added to the map
 	 */
-	public SerializableSimpleGraph<String, MapAttribute> getDiff(MapRepresentation m) {
+	public SerializableSimpleGraph<String, Couple<MapAttribute, Date>> getDiff(MapRepresentation m) {
 		MapRepresentation diff = new MapRepresentation(false);
 		// If a node from this is not in m, add it to diff
 		for (Node n : this.g) {

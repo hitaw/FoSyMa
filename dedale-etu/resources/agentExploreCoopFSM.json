@@ -20,5 +20,16 @@
     "detectionRadius": 0,
     "strengthExpertise": 2,
     "lockPickingExpertise":1
+  },
+  {
+    "agentType": "wumpus",
+    "agentName": "G1",
+    "communicationRange": 3,
+    "initialLocation": "free",
+    "backPackCapacityGold": -1,
+    "backPackCapacityDiamond": -1,
+    "detectionRadius": 3,
+    "strengthExpertise": 1,
+    "lockPickingExpertise": 1
   }
 ]

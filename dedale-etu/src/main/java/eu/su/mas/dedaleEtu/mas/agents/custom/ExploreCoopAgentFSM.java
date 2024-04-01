@@ -21,7 +21,6 @@ import org.graphstream.graph.Edge;
  *  - It explore the map using a DFS algorithm and blindly tries to share the topology with the agents within reach.
  *  - The shortestPath computation is not optimized
  *  - Agents do not coordinate themselves on the node(s) to visit, thus progressively creating a single file. It's bad.
- *  - The agent sends all its map, periodically, forever. Its bad x3.
  *  - You should give him the list of agents'name to send its map to in parameter when creating the agent.
  *   Object [] entityParameters={"Name1","Name2};
  *   ag=createNewDedaleAgent(c, agentName, ExploreCoopAgent.class.getName(), entityParameters);
@@ -39,7 +38,7 @@ import org.graphstream.graph.Edge;
 public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	private static final long serialVersionUID = -7969469610241668140L;
-	public static final int ExchangeTimeout = 10;
+	public static final int ExchangeTimeout = 5;
 	private MapRepresentation myMap;
 	
 	// State names 
@@ -145,7 +144,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
         voisins.remove(s);
     }
 
-	public void mergeMap(SerializableSimpleGraph<String, MapRepresentation.MapAttribute> sgreceived) {
+	public void mergeMap(SerializableSimpleGraph<String, Couple<MapRepresentation.MapAttribute, Date>> sgreceived) {
 		this.myMap.mergeMap(sgreceived);
 		for (Edge e : edgesRemoved.keySet()) {
 			this.myMap.removeEdge(e.getSourceNode().getId(), e.getTargetNode().getId());
@@ -199,7 +198,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	public Edge getEdge() {
 		Edge e = null;
 		for (Edge key : edgesRemoved.keySet()) {
-			if (edgesRemoved.get(key) > WalkStateBeha.MaxStuck){
+			if (edgesRemoved.get(key) > WalkStateBeha.TimeoutRemovedEdge){
 				e = key;
 				edgesRemoved.remove(key);
 				System.out.println("Agent "+this.getLocalName()+" -- added edge "+e.getId()+"\n");
@@ -236,7 +235,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	public MapRepresentation getAgentMap(String agentName) {
 		return receivedMaps.get(agentName);
 	}
-	public SerializableSimpleGraph<String, MapRepresentation.MapAttribute> getDiffAgentMap(String agentName) {
+	public SerializableSimpleGraph<String, Couple<MapRepresentation.MapAttribute, Date>> getDiffAgentMap(String agentName) {
 		MapRepresentation m = receivedMaps.get(agentName);
 		if (m == null) {
 			return myMap.getSerializableGraph();
@@ -245,7 +244,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		}
 	}
 
-	public void updateAgentMap(String agentName, SerializableSimpleGraph<String, MapRepresentation.MapAttribute> map) {
+	public void updateAgentMap(String agentName, SerializableSimpleGraph<String, Couple<MapRepresentation.MapAttribute, Date>> map) {
 		MapRepresentation m = receivedMaps.get(agentName);
 		if (m == null) {
 			m = new MapRepresentation(false);

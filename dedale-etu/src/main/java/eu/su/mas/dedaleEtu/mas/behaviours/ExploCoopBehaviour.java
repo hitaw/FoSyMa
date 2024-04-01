@@ -1,5 +1,6 @@
 package eu.su.mas.dedaleEtu.mas.behaviours;
 
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -125,9 +126,9 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 						MessageTemplate.MatchPerformative(ACLMessage.INFORM));
 				ACLMessage msgReceived=this.myAgent.receive(msgTemplate);
 				if (msgReceived!=null) {
-					SerializableSimpleGraph<String, MapAttribute> sgreceived=null;
+					SerializableSimpleGraph<String, Couple<MapAttribute, Date>> sgreceived=null;
 					try {
-						sgreceived = (SerializableSimpleGraph<String, MapAttribute>)msgReceived.getContentObject();
+						sgreceived = (SerializableSimpleGraph<String, Couple<MapAttribute, Date>>)msgReceived.getContentObject();
 					} catch (UnreadableException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

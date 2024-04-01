@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 import dataStructures.serializableGraph.SerializableSimpleGraph;
+import dataStructures.tuple.Couple;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation.MapAttribute;
@@ -43,9 +44,9 @@ public class ReceiveMapStateBeha extends OneShotBehaviour{
 		while ((cptAgents < nbCartesAttendues) && (new Date().before(exp)) ){
 			ACLMessage shareReceived=this.myAgent.receive(msgTemplate);
 			if (shareReceived!=null) {
-				SerializableSimpleGraph<String, MapAttribute> sgreceived=null;
+				SerializableSimpleGraph<String, Couple<MapAttribute, Date>> sgreceived=null;
 				try {
-					sgreceived = (SerializableSimpleGraph<String, MapAttribute>)shareReceived.getContentObject();
+					sgreceived = (SerializableSimpleGraph<String, Couple<MapAttribute, Date>>)shareReceived.getContentObject();
 					System.out.println("Agent "+this.myAgent.getLocalName()+" -- received map from "+shareReceived.getSender().getLocalName());
 					myAgent.addRecent(shareReceived.getSender().getLocalName());
 				} catch (UnreadableException e) {

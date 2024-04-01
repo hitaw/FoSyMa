@@ -28,7 +28,8 @@ public class WalkStateBeha extends OneShotBehaviour {
 
 	private List<String> list_agentNames;
 	private ExploreCoopAgentFSM myAgent;
-	public static final int MaxStuck = 5;
+	public static final int MaxStuck = 2;
+	public static final int TimeoutRemovedEdge = 10;
 
 /**
  * 
