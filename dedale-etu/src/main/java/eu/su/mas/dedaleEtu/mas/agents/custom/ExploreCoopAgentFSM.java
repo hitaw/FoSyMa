@@ -3,6 +3,7 @@ package eu.su.mas.dedaleEtu.mas.agents.custom;
 import java.util.*;
 
 import dataStructures.serializableGraph.SerializableSimpleGraph;
+import dataStructures.tuple.Couple;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import eu.su.mas.dedale.mas.agent.behaviours.platformManagment.*;
 
@@ -51,6 +52,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	private List<String> voisins = new ArrayList<String>();
 	private Map<String,Integer> recents = new HashMap<String,Integer>();
+	private Map<String, MapRepresentation> receivedMaps = new HashMap<String, MapRepresentation>();
 	private Date expiration = new Date();
 
 	// the number of times the agent tried to go to the same node and failed
@@ -82,6 +84,11 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 				list_agentNames.add((String)args[i]);
 				i++;
 			}
+		}
+
+		//Initialize the maps of agents to null
+		for (String agentName : list_agentNames) {
+			receivedMaps.put(agentName, null);
 		}
 
 		List<Behaviour> lb=new ArrayList<Behaviour>();
@@ -140,6 +147,9 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	public void mergeMap(SerializableSimpleGraph<String, MapRepresentation.MapAttribute> sgreceived) {
 		this.myMap.mergeMap(sgreceived);
+		for (Edge e : edgesRemoved.keySet()) {
+			this.myMap.removeEdge(e.getSourceNode().getId(), e.getTargetNode().getId());
+		}
 	}
 
 	public Date getExpiration() {
@@ -198,6 +208,14 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		}
 		return e;
 	}
+	public boolean isRemovedEdge(String from, String to) {
+		for (Edge key : edgesRemoved.keySet()) {
+			if (key.getSourceNode().getId().equals(from) && key.getTargetNode().getId().equals(to)) {
+				return true;
+			}
+		}
+		return false;
+	}
 	public void addRemovedEdge(Edge e) {
 		System.out.println("Agent "+this.getLocalName()+" -- removed edge "+e.getId());
 		edgesRemoved.put(e, 0);
@@ -206,6 +224,36 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	public void ageRemovedEdges() {
 		for (Edge key : edgesRemoved.keySet()) {
 			edgesRemoved.put(key, edgesRemoved.get(key) + 1);
+		}
+	}
+
+	public void addAllEdges() {
+		for (Edge key : edgesRemoved.keySet()) {
+			this.myMap.addEdge(key.getSourceNode().getId(), key.getTargetNode().getId(), key.getId(), this.getLocalName());
+		}
+	}
+
+	public MapRepresentation getAgentMap(String agentName) {
+		return receivedMaps.get(agentName);
+	}
+	public SerializableSimpleGraph<String, MapRepresentation.MapAttribute> getDiffAgentMap(String agentName) {
+		MapRepresentation m = receivedMaps.get(agentName);
+		if (m == null) {
+			return myMap.getSerializableGraph();
+		} else {
+			return myMap.getDiff(m);
+		}
+	}
+
+	public void updateAgentMap(String agentName, SerializableSimpleGraph<String, MapRepresentation.MapAttribute> map) {
+		MapRepresentation m = receivedMaps.get(agentName);
+		if (m == null) {
+			m = new MapRepresentation(false);
+			m.mergeMap(map);
+			receivedMaps.put(agentName, m);
+		} else {
+			m.mergeMap(map);
+			receivedMaps.put(agentName, m);
 		}
 	}
 }

@@ -21,14 +21,12 @@ public class SendMapStateBeha extends OneShotBehaviour{
 
 	private int cptAgents = 0;
 	private List<String> agentNames;
-	private MapRepresentation myMap;
 	private ExploreCoopAgentFSM myAgent;
 
 	
 	public SendMapStateBeha (final AbstractDedaleAgent myagent) {
 		super(myagent);
 		this.myAgent = (ExploreCoopAgentFSM) myagent;
-		this.myMap = myAgent.getMyMap();
 	}
 
 	@Override
@@ -36,32 +34,25 @@ public class SendMapStateBeha extends OneShotBehaviour{
 		this.agentNames = this.myAgent.getVoisins();
 		//envoi de la map
 
-//		MessageTemplate msgTemplate = MessageTemplate.and(
-//				MessageTemplate.MatchProtocol("YES"),
-//				MessageTemplate.MatchPerformative(ACLMessage.AGREE));
-//
-//		ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
-//
-		ACLMessage map = new ACLMessage(ACLMessage.INFORM);
-		map.setProtocol("SHARE-TOPO");
-		map.setSender(this.myAgent.getAID());
-
-//		while (msgReceived != null) {
-//			cptAgents++;
-//			map.addReceiver(msgReceived.getSender());
-//			msgReceived = this.myAgent.receive(msgTemplate);
-//		}
-		
 		for (String s : this.agentNames) {
+			ACLMessage map = new ACLMessage(ACLMessage.INFORM);
+			map.setProtocol("SHARE-TOPO");
+			map.setSender(this.myAgent.getAID());
+
 			map.addReceiver(new AID(s,AID.ISLOCALNAME));
+			SerializableSimpleGraph<String, MapAttribute> sg = this.myAgent.getDiffAgentMap(s);
+			if (sg != null) {
+				this.myAgent.updateAgentMap(s, sg);
+				try {
+					map.setContentObject(sg);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				((AbstractDedaleAgent)this.myAgent).sendMessage(map);
+				System.out.println("Agent "+this.myAgent.getLocalName()+" -- map sent to "+this.agentNames);
+			} else {
+				System.out.println("Agent "+this.myAgent.getLocalName()+" -- no map to send to "+this.agentNames);
+			}
 		}
-		SerializableSimpleGraph<String, MapAttribute> sg = this.myAgent.getMyMap().getSerializableGraph();
-		try {					
-			map.setContentObject(sg);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		((AbstractDedaleAgent)this.myAgent).sendMessage(map);
-		System.out.println("Agent "+this.myAgent.getLocalName()+" -- map sent to "+this.agentNames);
 	}
 }

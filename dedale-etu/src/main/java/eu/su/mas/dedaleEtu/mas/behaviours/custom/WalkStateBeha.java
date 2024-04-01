@@ -45,16 +45,18 @@ public class WalkStateBeha extends OneShotBehaviour {
 	@Override
 	public void action() {
 		this.myMap=myAgent.getMyMap();
-		myAgent.ageRemovedEdges(); // On vieillit les arêtes retirées
-		Edge ed = this.myAgent.getEdge(); // Un effectue cette action une fois par itération donc, et on ne peut enlever qu'une arête par itération donc une seule peut avoir dépassé le temps limite
-		if (ed != null) {
-			this.myMap.addEdge(ed.getSourceNode().getId(), ed.getTargetNode().getId());
-		}
 
 		System.out.println(this.myAgent.getLocalName()+" - WalkStateBeha");
 
 		if(this.myMap==null) {
 			this.myMap = new MapRepresentation();
+		}
+
+		myAgent.ageRemovedEdges(); // On vieillit les arêtes retirées
+		Edge ed = this.myAgent.getEdge(); // Un effectue cette action une fois par itération donc, et on ne peut enlever qu'une arête par itération donc une seule peut avoir dépassé le temps limite
+		if (ed != null) {
+			System.out.println("Agent "+this.myAgent.getLocalName()+" -- adding edge "+ed.getId());
+			this.myMap.addEdge(ed.getSourceNode().getId(), ed.getTargetNode().getId(), ed.getId(), this.myAgent.getLocalName());
 		}
 
 		//0) Retrieve the current position
@@ -68,7 +70,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 			 * Just added here to let you see what the agent is doing, otherwise he will be too quick
 			 */
 			try {
-				this.myAgent.doWait(1000);
+				this.myAgent.doWait(500);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -84,6 +86,9 @@ public class WalkStateBeha extends OneShotBehaviour {
 				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId());
 				//the node may exist, but not necessarily the edge
 				if (myPosition.getLocationId() != accessibleNode.getLocationId()) {
+					if (myAgent.isRemovedEdge(myPosition.getLocationId(), accessibleNode.getLocationId())) {
+						continue;
+					}
 					this.myMap.addEdge(myPosition.getLocationId(), accessibleNode.getLocationId());
 					if (nextNodeId==null && isNewNode) nextNodeId=accessibleNode.getLocationId();
 				}
@@ -93,6 +98,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 			if (!this.myMap.hasOpenNode()){
 				//Explo finished
 				System.out.println(this.myAgent.getLocalName()+" - Exploration successufully done, behaviour removed.");
+				myAgent.addAllEdges();
 			} else {
 				if (myAgent.getStuck() > MaxStuck) {
 					myAgent.setStuck(0);
@@ -105,7 +111,12 @@ public class WalkStateBeha extends OneShotBehaviour {
 				if (nextNodeId==null){
 					//no directly accessible openNode
 					//chose one, compute the path and take the first step.
-					nextNodeId=this.myMap.getShortestPathToClosestOpenNode(myPosition.getLocationId()).get(0);//getShortestPath(myPosition,this.openNodes.get(0)).get(0);
+					List<String> path = this.myMap.getShortestPathToClosestOpenNode(myPosition.getLocationId());
+					if (path != null) {
+						nextNodeId=path.get(0);//getShortestPath(myPosition,this.openNodes.get(0)).get(0);
+					} else {
+						nextNodeId = myPosition.getLocationId();
+					}
 					//System.out.println(this.myAgent.getLocalName()+"-- list= "+this.myMap.getOpenNodes()+"| nextNode: "+nextNode);
 				}else {
 					//System.out.println("nextNode notNUll - "+this.myAgent.getLocalName()+"-- list= "+this.myMap.getOpenNodes()+"\n -- nextNode: "+nextNode);

@@ -53,6 +53,7 @@ public class ReceiveMapStateBeha extends OneShotBehaviour{
 				}
 				this.myAgent.mergeMap(sgreceived);
 				cptAgents++;
+				myAgent.updateAgentMap(shareReceived.getSender().getLocalName(), this.myAgent.getMyMap().getSerializableGraph());
 			}
 		}
 		this.myAgent.setVoisins(new ArrayList<String>());

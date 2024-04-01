@@ -6,7 +6,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.graphstream.algorithm.Dijkstra;
@@ -62,7 +61,7 @@ public class MapRepresentation implements Serializable {
 	private String nodeStyle = defaultNodeStyle + nodeStyle_agent + nodeStyle_open;
 
 	private Graph g; // data structure non serializable
-	private Viewer viewer; // ref to the display, non serializable
+	private Viewer viewer; // ref to the display, non-serializable
 	private Integer nbEdges;// used to generate the edges ids
 
 	private SerializableSimpleGraph<String, MapAttribute> sg;// used as a temporary dataStructure during migration
@@ -76,6 +75,21 @@ public class MapRepresentation implements Serializable {
 		Platform.runLater(() -> {
 			openGui();
 		});
+		// this.viewer = this.g.display();
+
+		this.nbEdges = 0;
+	}
+	public MapRepresentation(boolean display) {
+		// System.setProperty("org.graphstream.ui.renderer","org.graphstream.ui.j2dviewer.J2DGraphRenderer");
+		System.setProperty("org.graphstream.ui", "javafx");
+		this.g = new SingleGraph("My world vision");
+		this.g.setAttribute("ui.stylesheet", nodeStyle);
+
+		if (display) {
+			Platform.runLater(() -> {
+				openGui();
+			});
+		}
 		// this.viewer = this.g.display();
 
 		this.nbEdges = 0;
@@ -134,14 +148,27 @@ public class MapRepresentation implements Serializable {
 		}
 	}
 
+	public synchronized void addEdge(String idNode1, String idNode2, String idEdge, String agent) {
+		try {
+			this.g.addEdge(idEdge, idNode1, idNode2);
+			System.out.println("Adding edge between " + idNode1 + " and " + idNode2);
+		} catch (IdAlreadyInUseException e1) {
+			System.err.println("ID existing" + agent);
+			System.exit(1);
+		} catch (EdgeRejectedException e2) {
+			System.err.println("Edge rejected" + agent);
+		} catch (ElementNotFoundException e3) {
+
+		}
+	}
+
 	public synchronized Edge removeEdge(String from, String to) {
 		Edge edge = null;
 		try {
-			this.nbEdges--;
 			edge = this.g.removeEdge(from, to);
 		}
 		catch (ElementNotFoundException e){
-			System.err.println("Edge cannot exist, one node missing");
+			System.out.println("Edge not in graph, one node missing");
 		}
 		return edge;
 	}
@@ -185,7 +212,7 @@ public class MapRepresentation implements Serializable {
 		List<Couple<String, Integer>> lc = opennodes.stream()
 				.map(on -> (getShortestPath(myPosition, on) != null)
 						? new Couple<String, Integer>(on, getShortestPath(myPosition, on).size())
-						: new Couple<String, Integer>(on, Integer.MAX_VALUE))// some nodes my be unreachable if the
+						: new Couple<String, Integer>(on, Integer.MAX_VALUE))// some nodes may be unreachable if the
 																				// agents do not share at least one
 																				// common node.
 				.collect(Collectors.toList());
@@ -264,7 +291,7 @@ public class MapRepresentation implements Serializable {
 	 * components
 	 */
 	private synchronized void closeGui() {
-		// once the graph is saved, clear non serializable components
+		// once the graph is saved, clear non-serializable components
 		if (this.viewer != null) {
 			// Platform.runLater(() -> {
 			try {
@@ -292,7 +319,7 @@ public class MapRepresentation implements Serializable {
 
 	public void mergeMap(SerializableSimpleGraph<String, MapAttribute> sgreceived) {
 		// System.out.println("You should decide what you want to save and how");
-		// System.out.println("We currently blindy add the topology");
+		// System.out.println("We currently blindly add the topology");
 
 		for (SerializableNode<String, MapAttribute> n : sgreceived.getAllNodes()) {
 			// System.out.println(n);
@@ -325,6 +352,42 @@ public class MapRepresentation implements Serializable {
 			}
 		}
 		// System.out.println("Merge done");
+	}
+
+	/**
+	 * If the given map has additional nodes compared to *this* it won't be taken. This only searches for elements that were added on *this*. It is meant to be used to update m
+	 * For example : if it worked on lists : [a,b,c].getDiff([a,b,d]) would return [c]
+	 *
+	 * @param m The smaller map to compare with this
+	 * @return the nodes and edges that were added to the map
+	 */
+	public SerializableSimpleGraph<String, MapAttribute> getDiff(MapRepresentation m) {
+		MapRepresentation diff = new MapRepresentation(false);
+		// If a node from this is not in m, add it to diff
+		for (Node n : this.g) {
+			MapAttribute attr = MapAttribute.valueOf((String) n.getAttribute("ui.class"));
+			if (m.g.getNode(n.getId()) == null) {
+				diff.addNode(n.getId(), attr);
+			} else { // if a node changed status from open to closed, add it to diff
+				if (n.getAttribute("ui.class") != m.g.getNode(n.getId()).getAttribute("ui.class")) {
+					diff.addNode(n.getId(), MapAttribute.closed);
+				}
+			}
+		}
+		// Add every edge known on modified nodes
+		for (Node n : diff.g) {
+			for (String s : this.getSerializableGraph().getEdges(n.getId())) {
+				if (diff.g.getNode(s) == null) { // if the node is not in diff, add it, otherwise it will try to add an edge to a non-existing node
+					MapAttribute attr = MapAttribute.valueOf((String) this.g.getNode(s).getAttribute("ui.class"));
+					diff.addNode(s, attr);
+				}
+				diff.addEdge(n.getId(), s);
+			}
+		}
+		if (diff.g.getNodeCount() == 0) {
+			return null;
+		}
+		return diff.getSerializableGraph();
 	}
 
 	/**
