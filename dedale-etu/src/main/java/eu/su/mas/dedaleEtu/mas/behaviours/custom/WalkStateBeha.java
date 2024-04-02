@@ -86,8 +86,6 @@ public class WalkStateBeha extends OneShotBehaviour {
 					stinkyNodes.put(obs.getLeft().toString(), false);
 				}
 			});
-			System.out.println(this.myAgent.getLocalName()+" - Stinky nodes: "+stinkyNodes);
-			System.out.println(this.myAgent.getLocalName()+" - My position: "+myPosition.getLocationId());
 			this.myMap.addNode(myPosition.getLocationId(), MapAttribute.closed, stinkyNodes.get(myPosition.getLocationId())? now : null);
 
 			//2) get the surrounding nodes and, if not in closedNodes, add them to open nodes.
@@ -95,7 +93,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 			Iterator<Couple<Location, List<Couple<Observation, Integer>>>> iter=lobs.iterator();
 			while(iter.hasNext()){
 				Location accessibleNode=iter.next().getLeft();
-				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId(), stinkyNodes.get(accessibleNode.getLocationId())? now : null);
+				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId(), stinkyNodes.get(accessibleNode.getLocationId())? now : null); // this also updates the stench date on already existing nodes
 				//the node may exist, but not necessarily the edge
 				if (myPosition.getLocationId() != accessibleNode.getLocationId()) {
 					if (myAgent.isRemovedEdge(myPosition.getLocationId(), accessibleNode.getLocationId())) {

@@ -131,6 +131,7 @@ public class MapRepresentation implements Serializable {
 			addNode(id, MapAttribute.open, stench);
 			return true;
 		}
+		this.g.getNode(id).setAttribute("stench.date", stench);
 		return false;
 	}
 
