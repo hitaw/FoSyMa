@@ -93,7 +93,7 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 			Iterator<Couple<Location, List<Couple<Observation, Integer>>>> iter=lobs.iterator();
 			while(iter.hasNext()){
 				Location accessibleNode=iter.next().getLeft();
-				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId());
+				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId(), null);
 				//the node may exist, but not necessarily the edge
 				if (myPosition.getLocationId()!=accessibleNode.getLocationId()) {
 					this.myMap.addEdge(myPosition.getLocationId(), accessibleNode.getLocationId());
@@ -118,7 +118,7 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 				}else {
 					//System.out.println("nextNode notNUll - "+this.myAgent.getLocalName()+"-- list= "+this.myMap.getOpenNodes()+"\n -- nextNode: "+nextNode);
 				}
-				
+
 				//5) At each time step, the agent check if he received a graph from a teammate. 	
 				// If it was written properly, this sharing action should be in a dedicated behaviour set.
 				MessageTemplate msgTemplate=MessageTemplate.and(

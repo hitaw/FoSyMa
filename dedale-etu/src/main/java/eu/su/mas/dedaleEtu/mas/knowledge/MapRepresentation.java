@@ -100,15 +100,23 @@ public class MapRepresentation implements Serializable {
 	 */
 	public synchronized void addNode(String id, MapAttribute mapAttribute) {
 		Node n;
+		Date stench = null;
 		if (this.g.getNode(id) == null) {
 			n = this.g.addNode(id);
 		} else {
 			n = this.g.getNode(id);
+			stench = (Date) n.getAttribute("stench.date");
 		}
 		n.clearAttributes();
 		n.setAttribute("ui.class", mapAttribute.toString());
 		n.setAttribute("ui.label", id);
-		n.setAttribute("stench.date", null);
+		n.setAttribute("stench.date", stench);
+	}
+
+	public synchronized void addNode(String id, MapAttribute mapAttribute, Date stenchDate) {
+		addNode(id, mapAttribute);
+		Node n = this.g.getNode(id);
+		n.setAttribute("stench.date", stenchDate);
 	}
 
 	/**
@@ -118,9 +126,9 @@ public class MapRepresentation implements Serializable {
 	 * @param id id of the node
 	 * @return true if added
 	 */
-	public synchronized boolean addNewNode(String id) {
+	public synchronized boolean addNewNode(String id, Date stench) {
 		if (this.g.getNode(id) == null) {
-			addNode(id, MapAttribute.open);
+			addNode(id, MapAttribute.open, stench);
 			return true;
 		}
 		return false;
@@ -364,7 +372,7 @@ public class MapRepresentation implements Serializable {
 	/**
 	 * If the given map has additional nodes compared to *this* it won't be taken. This only searches for elements that were added on *this*. It is meant to be used to update m
 	 * For example : if it worked on lists : [a,b,c].getDiff([a,b,d]) would return [c]
-	 * TODO renvoyer les stench aussi
+	 * TODO renvoyer les nouvelles stench aussi
 	 * @param m The smaller map to compare with this
 	 * @return the nodes and edges that were added to the map
 	 */
@@ -373,11 +381,12 @@ public class MapRepresentation implements Serializable {
 		// If a node from this is not in m, add it to diff
 		for (Node n : this.g) {
 			MapAttribute attr = MapAttribute.valueOf((String) n.getAttribute("ui.class"));
+			Date stenchDate = (Date) n.getAttribute("stench.date");
 			if (m.g.getNode(n.getId()) == null) {
-				diff.addNode(n.getId(), attr);
+				diff.addNode(n.getId(), attr, stenchDate);
 			} else { // if a node changed status from open to closed, add it to diff
 				if (n.getAttribute("ui.class") != m.g.getNode(n.getId()).getAttribute("ui.class")) {
-					diff.addNode(n.getId(), MapAttribute.closed);
+					diff.addNode(n.getId(), MapAttribute.closed, stenchDate);
 				}
 			}
 		}
@@ -386,7 +395,8 @@ public class MapRepresentation implements Serializable {
 			for (String s : this.getSerializableGraph().getEdges(n.getId())) {
 				if (diff.g.getNode(s) == null) { // if the node is not in diff, add it, otherwise it will try to add an edge to a non-existing node
 					MapAttribute attr = MapAttribute.valueOf((String) this.g.getNode(s).getAttribute("ui.class"));
-					diff.addNode(s, attr);
+					Date stenchDate = (Date) this.g.getNode(s).getAttribute("stench.date");
+					diff.addNode(s, attr, stenchDate);
 				}
 				diff.addEdge(n.getId(), s);
 			}

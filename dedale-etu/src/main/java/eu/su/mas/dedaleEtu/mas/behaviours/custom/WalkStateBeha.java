@@ -1,7 +1,6 @@
 package eu.su.mas.dedaleEtu.mas.behaviours.custom;
 
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import dataStructures.serializableGraph.SerializableSimpleGraph;
 import dataStructures.tuple.Couple;
@@ -53,6 +52,8 @@ public class WalkStateBeha extends OneShotBehaviour {
 			this.myMap = new MapRepresentation();
 		}
 
+		Date now = new Date();
+
 		myAgent.ageRemovedEdges(); // On vieillit les arêtes retirées
 		Edge ed = this.myAgent.getEdge(); // Un effectue cette action une fois par itération donc, et on ne peut enlever qu'une arête par itération donc une seule peut avoir dépassé le temps limite
 		if (ed != null) {
@@ -66,7 +67,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 		if (myPosition!=null){
 			//List of observable from the agent's current position
 			List<Couple<Location,List<Couple<Observation,Integer>>>> lobs=((AbstractDedaleAgent)this.myAgent).observe();//myPosition
-
+			System.out.println(this.myAgent.getLocalName()+" - Observations: "+lobs);
 			/**
 			 * Just added here to let you see what the agent is doing, otherwise he will be too quick
 			 */
@@ -77,14 +78,24 @@ public class WalkStateBeha extends OneShotBehaviour {
 			}
 
 			//1) remove the current node from openlist and add it to closedNodes.
-			this.myMap.addNode(myPosition.getLocationId(), MapAttribute.closed);
+			Map<String, Boolean> stinkyNodes = new HashMap<String, Boolean>();
+			lobs.forEach(obs -> {
+				if (!obs.getRight().isEmpty() && (obs.getRight().get(0).getLeft().toString().equals("Stench"))) {
+					stinkyNodes.put(obs.getLeft().toString(), true);
+				} else {
+					stinkyNodes.put(obs.getLeft().toString(), false);
+				}
+			});
+			System.out.println(this.myAgent.getLocalName()+" - Stinky nodes: "+stinkyNodes);
+			System.out.println(this.myAgent.getLocalName()+" - My position: "+myPosition.getLocationId());
+			this.myMap.addNode(myPosition.getLocationId(), MapAttribute.closed, stinkyNodes.get(myPosition.getLocationId())? now : null);
 
 			//2) get the surrounding nodes and, if not in closedNodes, add them to open nodes.
 			String nextNodeId=null;
 			Iterator<Couple<Location, List<Couple<Observation, Integer>>>> iter=lobs.iterator();
 			while(iter.hasNext()){
 				Location accessibleNode=iter.next().getLeft();
-				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId());
+				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId(), stinkyNodes.get(accessibleNode.getLocationId())? now : null);
 				//the node may exist, but not necessarily the edge
 				if (myPosition.getLocationId() != accessibleNode.getLocationId()) {
 					if (myAgent.isRemovedEdge(myPosition.getLocationId(), accessibleNode.getLocationId())) {
