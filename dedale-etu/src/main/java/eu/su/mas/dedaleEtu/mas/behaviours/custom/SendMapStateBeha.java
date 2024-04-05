@@ -42,7 +42,7 @@ public class SendMapStateBeha extends OneShotBehaviour{
 			map.setSender(this.myAgent.getAID());
 
 			map.addReceiver(new AID(s,AID.ISLOCALNAME));
-			SerializableSimpleGraph<String, Couple<MapAttribute, Date>> sg = this.myAgent.getDiffAgentMap(s);
+			SerializableSimpleGraph<String, Couple<MapAttribute, Couple<Date, Integer>>> sg = this.myAgent.getDiffAgentMap(s);
 			if (sg != null) {
 				this.myAgent.updateAgentMap(s, sg);
 				try {

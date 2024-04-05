@@ -44,9 +44,9 @@ public class ReceiveMapStateBeha extends OneShotBehaviour{
 		while ((cptAgents < nbCartesAttendues) && (new Date().before(exp)) ){
 			ACLMessage shareReceived=this.myAgent.receive(msgTemplate);
 			if (shareReceived!=null) {
-				SerializableSimpleGraph<String, Couple<MapAttribute, Date>> sgreceived=null;
+				SerializableSimpleGraph<String, Couple<MapAttribute, Couple<Date, Integer>>> sgreceived=null;
 				try {
-					sgreceived = (SerializableSimpleGraph<String, Couple<MapAttribute, Date>>)shareReceived.getContentObject();
+					sgreceived = (SerializableSimpleGraph<String, Couple<MapAttribute, Couple<Date, Integer>>>)shareReceived.getContentObject();
 					System.out.println("Agent "+this.myAgent.getLocalName()+" -- received map from "+shareReceived.getSender().getLocalName());
 					myAgent.addRecent(shareReceived.getSender().getLocalName());
 				} catch (UnreadableException e) {

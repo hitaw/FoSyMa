@@ -93,7 +93,7 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 			Iterator<Couple<Location, List<Couple<Observation, Integer>>>> iter=lobs.iterator();
 			while(iter.hasNext()){
 				Location accessibleNode=iter.next().getLeft();
-				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId(), null);
+				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId(), false);
 				//the node may exist, but not necessarily the edge
 				if (myPosition.getLocationId()!=accessibleNode.getLocationId()) {
 					this.myMap.addEdge(myPosition.getLocationId(), accessibleNode.getLocationId());
@@ -126,9 +126,9 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 						MessageTemplate.MatchPerformative(ACLMessage.INFORM));
 				ACLMessage msgReceived=this.myAgent.receive(msgTemplate);
 				if (msgReceived!=null) {
-					SerializableSimpleGraph<String, Couple<MapAttribute, Date>> sgreceived=null;
+					SerializableSimpleGraph<String, Couple<MapAttribute, Couple<Date, Integer>>> sgreceived=null;
 					try {
-						sgreceived = (SerializableSimpleGraph<String, Couple<MapAttribute, Date>>)msgReceived.getContentObject();
+						sgreceived = (SerializableSimpleGraph<String, Couple<MapAttribute, Couple<Date, Integer>>>)msgReceived.getContentObject();
 					} catch (UnreadableException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

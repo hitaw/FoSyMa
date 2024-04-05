@@ -100,7 +100,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerState(new SendMapStateBeha(this), E);
 		fsm.registerState(new ReceiveMapStateBeha(this), D);
 		fsm.registerState(new WalkStateBeha(this, list_agentNames), C);
-		fsm.registerLastState(new HuntingStateBeha(this), F);
+		fsm.registerLastState(new HuntingStateBeha(this, list_agentNames), F);
 		
 		// Register the transitions
 		fsm.registerDefaultTransition(A, B);
@@ -144,7 +144,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
         voisins.remove(s);
     }
 
-	public void mergeMap(SerializableSimpleGraph<String, Couple<MapRepresentation.MapAttribute, Date>> sgreceived) {
+	public void mergeMap(SerializableSimpleGraph<String, Couple<MapRepresentation.MapAttribute, Couple<Date, Integer>>> sgreceived) {
 		this.myMap.mergeMap(sgreceived);
 		for (Edge e : edgesRemoved.keySet()) {
 			this.myMap.removeEdge(e.getSourceNode().getId(), e.getTargetNode().getId());
@@ -235,7 +235,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	public MapRepresentation getAgentMap(String agentName) {
 		return receivedMaps.get(agentName);
 	}
-	public SerializableSimpleGraph<String, Couple<MapRepresentation.MapAttribute, Date>> getDiffAgentMap(String agentName) {
+	public SerializableSimpleGraph<String, Couple<MapRepresentation.MapAttribute, Couple<Date, Integer>>> getDiffAgentMap(String agentName) {
 		MapRepresentation m = receivedMaps.get(agentName);
 		if (m == null) {
 			return myMap.getSerializableGraph();
@@ -244,15 +244,12 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		}
 	}
 
-	public void updateAgentMap(String agentName, SerializableSimpleGraph<String, Couple<MapRepresentation.MapAttribute, Date>> map) {
+	public void updateAgentMap(String agentName, SerializableSimpleGraph<String, Couple<MapRepresentation.MapAttribute, Couple<Date, Integer>>> map) {
 		MapRepresentation m = receivedMaps.get(agentName);
 		if (m == null) {
 			m = new MapRepresentation(false);
-			m.mergeMap(map);
-			receivedMaps.put(agentName, m);
-		} else {
-			m.mergeMap(map);
-			receivedMaps.put(agentName, m);
-		}
-	}
+        }
+        m.mergeMap(map);
+        receivedMaps.put(agentName, m);
+    }
 }

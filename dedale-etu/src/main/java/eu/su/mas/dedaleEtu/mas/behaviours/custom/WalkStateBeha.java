@@ -2,7 +2,6 @@ package eu.su.mas.dedaleEtu.mas.behaviours.custom;
 
 import java.util.*;
 
-import dataStructures.serializableGraph.SerializableSimpleGraph;
 import dataStructures.tuple.Couple;
 import eu.su.mas.dedale.env.Location;
 import eu.su.mas.dedale.env.Observation;
@@ -52,8 +51,6 @@ public class WalkStateBeha extends OneShotBehaviour {
 			this.myMap = new MapRepresentation();
 		}
 
-		Date now = new Date();
-
 		myAgent.ageRemovedEdges(); // On vieillit les arêtes retirées
 		Edge ed = this.myAgent.getEdge(); // Un effectue cette action une fois par itération donc, et on ne peut enlever qu'une arête par itération donc une seule peut avoir dépassé le temps limite
 		if (ed != null) {
@@ -78,22 +75,17 @@ public class WalkStateBeha extends OneShotBehaviour {
 			}
 
 			//1) remove the current node from openlist and add it to closedNodes.
-			Map<String, Boolean> stinkyNodes = new HashMap<String, Boolean>();
-			lobs.forEach(obs -> {
-				if (!obs.getRight().isEmpty() && (obs.getRight().get(0).getLeft().toString().equals("Stench"))) {
-					stinkyNodes.put(obs.getLeft().toString(), true);
-				} else {
-					stinkyNodes.put(obs.getLeft().toString(), false);
-				}
-			});
-			this.myMap.addNode(myPosition.getLocationId(), MapAttribute.closed, stinkyNodes.get(myPosition.getLocationId())? now : null);
+			Couple<Location, List<Couple<Observation, Integer>>> obs = lobs.get(0);
+			this.myMap.addNode(myPosition.getLocationId(), MapAttribute.closed, !obs.getRight().isEmpty() && (obs.getRight().get(0).getLeft().toString().equals("Stench")));
 
 			//2) get the surrounding nodes and, if not in closedNodes, add them to open nodes.
 			String nextNodeId=null;
 			Iterator<Couple<Location, List<Couple<Observation, Integer>>>> iter=lobs.iterator();
 			while(iter.hasNext()){
-				Location accessibleNode=iter.next().getLeft();
-				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId(), stinkyNodes.get(accessibleNode.getLocationId())? now : null); // this also updates the stench date on already existing nodes
+				obs = iter.next();
+				Location accessibleNode=obs.getLeft();
+				boolean stench = !obs.getRight().isEmpty() && (obs.getRight().get(0).getLeft().toString().equals("Stench"));
+				boolean isNewNode = this.myMap.addNewNode(accessibleNode.getLocationId(), stench); // this also updates the stench date on already existing nodes
 				//the node may exist, but not necessarily the edge
 				if (myPosition.getLocationId() != accessibleNode.getLocationId()) {
 					if (myAgent.isRemovedEdge(myPosition.getLocationId(), accessibleNode.getLocationId())) {
@@ -103,7 +95,6 @@ public class WalkStateBeha extends OneShotBehaviour {
 					if (nextNodeId==null && isNewNode) nextNodeId=accessibleNode.getLocationId();
 				}
 			}
-
 			//3) while openNodes is not empty, continues.
 			if (!this.myMap.hasOpenNode()){
 				//Explo finished
@@ -114,8 +105,15 @@ public class WalkStateBeha extends OneShotBehaviour {
 					myAgent.setStuck(0);
 					Edge e = myMap.removeEdge(myPosition.getLocationId(), this.myMap.getShortestPathToClosestOpenNode(myPosition.getLocationId()).get(0));
 					myAgent.addRemovedEdge(e);
+					myMap.clearPlannedItinerary(); //The plan that was calculated is no longer valid, we have to calculate a new one
 				}
 				//4) select next move.
+
+				// 4.0 If the movement plan has already been calculated, and nothing has changed (new map info or stuck made a change), go for it
+				if (myMap.getNextNodePlan() != null) {
+					nextNodeId = myMap.getNextNodePlan();
+				}
+
 				//4.1 If there exist one open node directly reachable, go for it,
 				//	 otherwise choose one from the openNode list, compute the shortestPath and go for it
 				if (nextNodeId==null){
@@ -124,6 +122,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 					List<String> path = this.myMap.getShortestPathToClosestOpenNode(myPosition.getLocationId());
 					if (path != null) {
 						nextNodeId=path.get(0);//getShortestPath(myPosition,this.openNodes.get(0)).get(0);
+						myMap.setPlannedItinerary(path);
 					} else {
 						nextNodeId = myPosition.getLocationId();
 					}
@@ -132,6 +131,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 					//System.out.println("nextNode notNUll - "+this.myAgent.getLocalName()+"-- list= "+this.myMap.getOpenNodes()+"\n -- nextNode: "+nextNode);
 				}
 				if (((AbstractDedaleAgent)this.myAgent).moveTo(new gsLocation(nextNodeId))) {
+					myMap.advancePlan();
 					myAgent.setStuck(0);
 				} else {
 					myAgent.setStuck(myAgent.getStuck() + 1);

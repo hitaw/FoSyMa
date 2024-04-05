@@ -62,7 +62,7 @@ public class ShareMapBehaviour extends TickerBehaviour{
 			msg.addReceiver(new AID(agentName,AID.ISLOCALNAME));
 		}
 			
-		SerializableSimpleGraph<String, Couple<MapAttribute, Date>> sg=this.myMap.getSerializableGraph();
+		SerializableSimpleGraph<String, Couple<MapAttribute, Couple<Date, Integer>>> sg=this.myMap.getSerializableGraph();
 		try {					
 			msg.setContentObject(sg);
 		} catch (IOException e) {

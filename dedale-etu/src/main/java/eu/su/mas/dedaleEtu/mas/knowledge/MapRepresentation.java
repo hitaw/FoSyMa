@@ -40,28 +40,30 @@ public class MapRepresentation implements Serializable {
 	 */
 
 	public enum MapAttribute {
-		agent, open, closed;
+		agent, open, closed, openStench, stench;
+    }
 
-	}
-
+	private List<String> plannedItinerary = null;
 	private static final long serialVersionUID = -1333959882640838272L;
 
 	/*********************************
 	 * Parameters for graph rendering
 	 ********************************/
 
-	private String defaultNodeStyle = "node {" + "fill-color: black;"
+	private final String defaultNodeStyle = "node {" + "fill-color: black;"
 			+ " size-mode:fit;text-alignment:under; text-size:14;text-color:white;text-background-mode:rounded-box;text-background-color:black;}";
-	private String nodeStyle_open = "node.agent {" + "fill-color: forestgreen;" + "}";
-	private String nodeStyle_agent = "node.open {" + "fill-color: blue;" + "}";
-	private String nodeStyle_stench = "node.stench {" + "fill-color: yellow;" + "}";
-	private String nodeStyle = defaultNodeStyle + nodeStyle_agent + nodeStyle_open + nodeStyle_stench;
+	private final String nodeStyle_open = "node.agent {" + "fill-color: forestgreen;" + "}";
+	private final String nodeStyle_agent = "node.open {" + "fill-color: blue;" + "}";
+	private final String nodeStyle_stench = "node.stench {" + "fill-color: yellow;" + "}";
+    private final String nodeStyle_openStench = "node.openStench {" + "fill-color: green;" + "}";
+
+	private final String nodeStyle = defaultNodeStyle + nodeStyle_agent + nodeStyle_open + nodeStyle_stench + nodeStyle_openStench;
 
 	private Graph g; // data structure non serializable
 	private Viewer viewer; // ref to the display, non-serializable
 	private Integer nbEdges;// used to generate the edges ids
 
-	private SerializableSimpleGraph<String, Couple<MapAttribute, Date>> sg;// used as a temporary dataStructure during migration
+	private SerializableSimpleGraph<String, Couple<MapAttribute, Couple<Date, Integer>>> sg;// used as a temporary dataStructure during migration
 
 	public MapRepresentation() {
 		// System.setProperty("org.graphstream.ui.renderer","org.graphstream.ui.j2dviewer.J2DGraphRenderer");
@@ -69,9 +71,7 @@ public class MapRepresentation implements Serializable {
 		this.g = new SingleGraph("My world vision");
 		this.g.setAttribute("ui.stylesheet", nodeStyle);
 
-		Platform.runLater(() -> {
-			openGui();
-		});
+		Platform.runLater(this::openGui);
 		// this.viewer = this.g.display();
 
 		this.nbEdges = 0;
@@ -83,9 +83,7 @@ public class MapRepresentation implements Serializable {
 		this.g.setAttribute("ui.stylesheet", nodeStyle);
 
 		if (display) {
-			Platform.runLater(() -> {
-				openGui();
-			});
+			Platform.runLater(this::openGui);
 		}
 		// this.viewer = this.g.display();
 
@@ -108,30 +106,76 @@ public class MapRepresentation implements Serializable {
 			stench = (Date) n.getAttribute("stench.date");
 		}
 		n.clearAttributes();
+        if (stench != null) {
+            if (mapAttribute == MapAttribute.open) {
+                mapAttribute = MapAttribute.openStench;
+            }
+            if (mapAttribute == MapAttribute.closed) {
+                mapAttribute = MapAttribute.stench;
+            }
+        }
 		n.setAttribute("ui.class", mapAttribute.toString());
 		n.setAttribute("ui.label", id);
 		n.setAttribute("stench.date", stench);
+		n.setAttribute("stench.count", 0);
 	}
 
-	public synchronized void addNode(String id, MapAttribute mapAttribute, Date stenchDate) {
+	public synchronized void addNode(String id, MapAttribute mapAttribute, boolean stench) {
 		addNode(id, mapAttribute);
 		Node n = this.g.getNode(id);
-		n.setAttribute("stench.date", stenchDate);
+        if (stench) {
+			n.setAttribute("stench.count", (Integer) n.getAttribute("stench.count") + 1);
+			if (mapAttribute == MapAttribute.open) {
+                mapAttribute = MapAttribute.openStench;
+            }
+            if (mapAttribute == MapAttribute.closed) {
+                mapAttribute = MapAttribute.stench;
+            }
+        }
+        n.setAttribute("ui.class", mapAttribute.toString());
+        n.setAttribute("stench.date", new Date());
+	}
+
+	public synchronized void addNode(String id, MapAttribute mapAttribute, Date dateStench, int countStench) {
+		addNode(id, mapAttribute);
+		Node n = this.g.getNode(id);
+		n.setAttribute("stench.date", dateStench);
+		n.setAttribute("stench.count", countStench);
 	}
 
 	/**
-	 * Add a node to the graph. Do nothing if the node already exists. If new, it is
+	 * Add a node to the graph. Updates stench date if the node already exists. If new, it is
 	 * labeled as open (non-visited)
 	 * 
 	 * @param id id of the node
 	 * @return true if added
 	 */
-	public synchronized boolean addNewNode(String id, Date stench) {
+	public synchronized boolean addNewNode(String id, boolean stench) {
 		if (this.g.getNode(id) == null) {
 			addNode(id, MapAttribute.open, stench);
 			return true;
 		}
-		this.g.getNode(id).setAttribute("stench.date", stench);
+
+        // Updates the status to update the color of the node
+        Node n = this.g.getNode(id);
+        String c = (String) n.getAttribute("ui.class");
+        if ((Integer)n.getAttribute("stench.count") == 0 && stench) {
+            if (c == MapAttribute.open.toString()) {
+                n.setAttribute("ui.class", MapAttribute.openStench.toString());
+            } else if (c == MapAttribute.closed.toString()) {
+                n.setAttribute("ui.class", MapAttribute.stench.toString());
+            }
+        } else if ((Integer)n.getAttribute("stench.count") != 0 && !stench) {
+			n.setAttribute("stench.count", 0);
+            if (c == MapAttribute.openStench.toString()) {
+                n.setAttribute("ui.class", MapAttribute.open.toString());
+            } else if (c == MapAttribute.stench.toString()) {
+                n.setAttribute("ui.class", MapAttribute.closed.toString());
+            }
+        }
+
+		if (stench) n.setAttribute("stench.count", (Integer)n.getAttribute("stench.count") + 1);
+		n.setAttribute("stench.date", new Date()); // update the stench date on an already existing node
 		return false;
 	}
 
@@ -163,7 +207,7 @@ public class MapRepresentation implements Serializable {
 			System.err.println("ID existing" + agent);
 			System.exit(1);
 		} catch (EdgeRejectedException e2) {
-			System.err.println("Edge rejected" + agent);
+			System.err.println("Edge rejected " + agent);
 		} catch (ElementNotFoundException e3) {
 
 		}
@@ -230,13 +274,35 @@ public class MapRepresentation implements Serializable {
 		return getShortestPath(myPosition, closest.get().getLeft());
 	}
 
+
+	public void setPlannedItinerary(List<String> plannedItinerary) {
+		this.plannedItinerary = plannedItinerary;
+	}
+
+	public void clearPlannedItinerary() {
+		this.plannedItinerary = null;
+	}
+
+	public synchronized String getNextNodePlan() {
+		if (plannedItinerary == null || plannedItinerary.isEmpty()){
+			return null;
+		}
+		return plannedItinerary.get(0);
+	}
+
+	public synchronized void advancePlan() {
+		if (plannedItinerary != null && !plannedItinerary.isEmpty()) {
+			plannedItinerary.remove(0);
+		}
+	}
+
 	public List<String> getOpenNodes() {
-		return this.g.nodes().filter(x -> x.getAttribute("ui.class") == MapAttribute.open.toString()).map(Node::getId)
+		return this.g.nodes().filter(x -> (x.getAttribute("ui.class") == MapAttribute.open.toString() || x.getAttribute("ui.class") == MapAttribute.openStench.toString())).map(Node::getId)
 				.collect(Collectors.toList());
 	}
 
 	/**
-	 * Before the migration we kill all non serializable components and store their
+	 * Before the migration we kill all non-serializable components and store their
 	 * data in a serializable form
 	 */
 	public void prepareMigration() {
@@ -251,11 +317,11 @@ public class MapRepresentation implements Serializable {
 	 * Before sending the agent knowledge of the map it should be serialized.
 	 */
 	private void serializeGraphTopology() {
-		this.sg = new SerializableSimpleGraph<String, Couple<MapAttribute,Date>>();
+		this.sg = new SerializableSimpleGraph<String, Couple<MapAttribute,Couple<Date, Integer>>>();
 		Iterator<Node> iter = this.g.iterator();
 		while (iter.hasNext()) {
 			Node n = iter.next();
-			sg.addNode(n.getId(), new Couple(MapAttribute.valueOf((String) n.getAttribute("ui.class")), n.getAttribute("stench.date")));
+			sg.addNode(n.getId(), new Couple(MapAttribute.valueOf((String) n.getAttribute("ui.class")), new Couple(n.getAttribute("stench.date"), n.getAttribute("stench.count"))));
 		}
 		Iterator<Edge> iterE = this.g.edges().iterator();
 		while (iterE.hasNext()) {
@@ -266,14 +332,14 @@ public class MapRepresentation implements Serializable {
 		}
 	}
 
-	public synchronized SerializableSimpleGraph<String, Couple<MapAttribute, Date>> getSerializableGraph() {
+	public synchronized SerializableSimpleGraph<String, Couple<MapAttribute, Couple<Date, Integer>>> getSerializableGraph() {
 		serializeGraphTopology();
 		return this.sg;
 	}
 
 	/**
-	 * After migration we load the serialized data and recreate the non-serializable
-	 * components (Gui,..)
+	 * After migration, we load the serialized data and recreate the non-serializable
+	 * components (Gui,...)
 	 */
 	public synchronized void loadSavedData() {
 
@@ -283,9 +349,10 @@ public class MapRepresentation implements Serializable {
 		openGui();
 
 		Integer nbEd = 0;
-		for (SerializableNode<String, Couple<MapAttribute, Date>> n : this.sg.getAllNodes()) {
+		for (SerializableNode<String, Couple<MapAttribute, Couple<Date, Integer>>> n : this.sg.getAllNodes()) {
 			this.g.addNode(n.getNodeId()).setAttribute("ui.class", n.getNodeContent().getLeft().toString());
-			this.g.getNode(n.getNodeId()).setAttribute("stench.date", n.getNodeContent().getRight());
+			this.g.getNode(n.getNodeId()).setAttribute("stench.date", n.getNodeContent().getRight().getLeft());
+			this.g.getNode(n.getNodeId()).setAttribute("stench.count", n.getNodeContent().getRight().getRight());
 			for (String s : this.sg.getEdges(n.getNodeId())) {
 				this.g.addEdge(nbEd.toString(), n.getNodeId(), s);
 				nbEd++;
@@ -325,11 +392,11 @@ public class MapRepresentation implements Serializable {
 		g.display();
 	}
 
-	public void mergeMap(SerializableSimpleGraph<String, Couple<MapAttribute, Date>> sgreceived) {
+	public void mergeMap(SerializableSimpleGraph<String, Couple<MapAttribute, Couple<Date, Integer>>> sgreceived) {
 		// System.out.println("You should decide what you want to save and how");
 		// System.out.println("We currently blindly add the topology");
 
-		for (SerializableNode<String, Couple<MapAttribute, Date>> n : sgreceived.getAllNodes()) {
+		for (SerializableNode<String, Couple<MapAttribute, Couple<Date, Integer>>> n : sgreceived.getAllNodes()) {
 			// System.out.println(n);
 			boolean alreadyIn = false;
 			// 1 Add the node
@@ -343,7 +410,9 @@ public class MapRepresentation implements Serializable {
 			if (!alreadyIn) {
 				newnode.setAttribute("ui.label", newnode.getId());
 				newnode.setAttribute("ui.class", n.getNodeContent().getLeft().toString());
-				newnode.setAttribute("stench.date", n.getNodeContent().getRight());
+				newnode.setAttribute("stench.date", n.getNodeContent().getRight().getLeft());
+				newnode.setAttribute("stench.count", n.getNodeContent().getRight().getRight());
+
 			} else {
 				newnode = this.g.getNode(n.getNodeId());
 				// 3 check its attribute. If it is below the one received, update it.
@@ -351,22 +420,31 @@ public class MapRepresentation implements Serializable {
 						|| n.getNodeContent().toString() == MapAttribute.closed.toString()) {
 					newnode.setAttribute("ui.class", MapAttribute.closed.toString());
 				}
-				// if the date of the stench is more recent, update it
-				if (n.getNodeContent().getRight() != null) {
-					if ((Date) newnode.getAttribute("stench.date") == null
-							|| ((Date) newnode.getAttribute("stench.date")).before(n.getNodeContent().getRight())) {
-						newnode.setAttribute("stench.date", n.getNodeContent().getRight());
+
+				// if the date of the stench is more recent, update it and update the count
+				if (((Date) newnode.getAttribute("stench.date")).before(n.getNodeContent().getRight().getLeft())) {
+					newnode.setAttribute("stench.date", n.getNodeContent().getRight().getLeft());
+					newnode.setAttribute("stench.count", n.getNodeContent().getRight().getRight());
+
+					// Update the status if the count is different from zero
+					if ((Integer) newnode.getAttribute("stench.count") != 0) {
+						if (newnode.getAttribute("ui.class") == MapAttribute.open.toString()) {
+							newnode.setAttribute("ui.class", MapAttribute.openStench.toString());
+						} else if (newnode.getAttribute("ui.class") == MapAttribute.closed.toString()) {
+							newnode.setAttribute("ui.class", MapAttribute.stench.toString());
+						}
 					}
 				}
 			}
 		}
 
 		// 4 now that all nodes are added, we can add edges
-		for (SerializableNode<String, Couple<MapAttribute, Date>> n : sgreceived.getAllNodes()) {
+		for (SerializableNode<String, Couple<MapAttribute, Couple<Date, Integer>>> n : sgreceived.getAllNodes()) {
 			for (String s : sgreceived.getEdges(n.getNodeId())) {
 				addEdge(n.getNodeId(), s);
 			}
 		}
+		this.clearPlannedItinerary(); // The map changed, we want to recalculate the itinerary
 		// System.out.println("Merge done");
 	}
 
@@ -377,17 +455,18 @@ public class MapRepresentation implements Serializable {
 	 * @param m The smaller map to compare with this
 	 * @return the nodes and edges that were added to the map
 	 */
-	public SerializableSimpleGraph<String, Couple<MapAttribute, Date>> getDiff(MapRepresentation m) {
+	public SerializableSimpleGraph<String, Couple<MapAttribute, Couple<Date, Integer>>> getDiff(MapRepresentation m) {
 		MapRepresentation diff = new MapRepresentation(false);
 		// If a node from this is not in m, add it to diff
 		for (Node n : this.g) {
 			MapAttribute attr = MapAttribute.valueOf((String) n.getAttribute("ui.class"));
 			Date stenchDate = (Date) n.getAttribute("stench.date");
+			int stenchCount = (Integer) n.getAttribute("stench.count");
 			if (m.g.getNode(n.getId()) == null) {
-				diff.addNode(n.getId(), attr, stenchDate);
-			} else { // if a node changed status from open to closed, add it to diff
+				diff.addNode(n.getId(), attr, stenchDate, stenchCount);
+			} else { // if a node changed status from open to closed, add it to diff TODO closed stench
 				if (n.getAttribute("ui.class") != m.g.getNode(n.getId()).getAttribute("ui.class")) {
-					diff.addNode(n.getId(), MapAttribute.closed, stenchDate);
+					diff.addNode(n.getId(), MapAttribute.closed, stenchDate, stenchCount);
 				}
 			}
 		}
@@ -397,7 +476,9 @@ public class MapRepresentation implements Serializable {
 				if (diff.g.getNode(s) == null) { // if the node is not in diff, add it, otherwise it will try to add an edge to a non-existing node
 					MapAttribute attr = MapAttribute.valueOf((String) this.g.getNode(s).getAttribute("ui.class"));
 					Date stenchDate = (Date) this.g.getNode(s).getAttribute("stench.date");
-					diff.addNode(s, attr, stenchDate);
+					int stenchCount = (Integer) this.g.getNode(s).getAttribute("stench.count");
+
+					diff.addNode(s, attr, stenchDate, stenchCount);
 				}
 				diff.addEdge(n.getId(), s);
 			}
@@ -412,9 +493,12 @@ public class MapRepresentation implements Serializable {
 	 * 
 	 * @return true if there exist at least one openNode on the graph
 	 */
-	public boolean hasOpenNode() {
-		return (this.g.nodes().filter(n -> n.getAttribute("ui.class") == MapAttribute.open.toString()).findAny())
+	public boolean hasOpenNode() { // TODO noeuds à voir plus tard
+		return (this.g.nodes().filter(n -> ((n.getAttribute("ui.class") == MapAttribute.open.toString()) || (n.getAttribute("ui.class") == MapAttribute.openStench.toString()))).findAny())
 				.isPresent();
 	}
 
+	public String getStinkiestNode() {
+
+	}
 }

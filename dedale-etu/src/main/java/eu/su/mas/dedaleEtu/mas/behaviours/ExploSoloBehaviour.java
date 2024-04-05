@@ -76,7 +76,7 @@ public class ExploSoloBehaviour extends SimpleBehaviour {
 			Iterator<Couple<Location, List<Couple<Observation, Integer>>>> iter=lobs.iterator();
 			while(iter.hasNext()){
 				Location accessibleNode=iter.next().getLeft();
-				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId(), null);
+				boolean isNewNode=this.myMap.addNewNode(accessibleNode.getLocationId(), false);
 				//the node may exist, but not necessarily the edge
 				if (myPosition.getLocationId()!=accessibleNode.getLocationId()) {
 					this.myMap.addEdge(myPosition.getLocationId(), accessibleNode.getLocationId());
