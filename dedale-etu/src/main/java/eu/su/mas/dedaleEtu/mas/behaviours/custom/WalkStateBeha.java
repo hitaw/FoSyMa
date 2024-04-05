@@ -15,6 +15,8 @@ import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
 import jade.core.behaviours.OneShotBehaviour;
 import org.graphstream.graph.Edge;
 
+import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.MaxStuck;
+
 public class WalkStateBeha extends OneShotBehaviour {	
 
 	private static final long serialVersionUID = 8567689731496787661L;
@@ -26,7 +28,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 
 	private List<String> list_agentNames;
 	private ExploreCoopAgentFSM myAgent;
-	public static final int MaxStuck = 2;
+
 	public static final int TimeoutRemovedEdge = 10;
 
 /**
@@ -69,7 +71,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 			 * Just added here to let you see what the agent is doing, otherwise he will be too quick
 			 */
 			try {
-				this.myAgent.doWait(500);
+				this.myAgent.doWait(10);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -127,7 +129,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 						nextNodeId = myPosition.getLocationId();
 					}
 					//System.out.println(this.myAgent.getLocalName()+"-- list= "+this.myMap.getOpenNodes()+"| nextNode: "+nextNode);
-				}else {
+				} else {
 					//System.out.println("nextNode notNUll - "+this.myAgent.getLocalName()+"-- list= "+this.myMap.getOpenNodes()+"\n -- nextNode: "+nextNode);
 				}
 				if (((AbstractDedaleAgent)this.myAgent).moveTo(new gsLocation(nextNodeId))) {

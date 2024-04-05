@@ -499,6 +499,12 @@ public class MapRepresentation implements Serializable {
 	}
 
 	public String getStinkiestNode() {
-
+		Node res = this.g.getNode(0);
+		for (Node n : this.g) {
+			if ((Integer) n.getAttribute("stench.count") >(Integer) res.getAttribute("stench.count")) {
+				res = n;
+			}
+		}
+		return res.getId();
 	}
 }

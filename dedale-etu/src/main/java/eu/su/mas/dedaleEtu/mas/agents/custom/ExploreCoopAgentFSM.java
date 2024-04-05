@@ -47,7 +47,8 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	private static final String C = "Walk";
 	private static final String D = "ReceiveMap";
 	private static final String E = "SendMap";
-	private static final String F = "Hunting";
+	private static final String F = "Gathering";
+	public static final int MaxStuck = 2;
 
 	private List<String> voisins = new ArrayList<String>();
 	private Map<String,Integer> recents = new HashMap<String,Integer>();
@@ -100,7 +101,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerState(new SendMapStateBeha(this), E);
 		fsm.registerState(new ReceiveMapStateBeha(this), D);
 		fsm.registerState(new WalkStateBeha(this, list_agentNames), C);
-		fsm.registerLastState(new HuntingStateBeha(this, list_agentNames), F);
+		fsm.registerLastState(new GatheringStateBeha(this, list_agentNames), F);
 		
 		// Register the transitions
 		fsm.registerDefaultTransition(A, B);
@@ -111,6 +112,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerTransition(C, F, 0);
 		fsm.registerDefaultTransition(D, B);
 		fsm.registerDefaultTransition(E, D);
+		fsm.registerDefaultTransition(F,F);
 
 		lb.add(fsm);
 		
