@@ -19,13 +19,11 @@ import jade.lang.acl.UnreadableException;
 public class ReceiveMapStateBeha extends OneShotBehaviour{
 	
 	private static final long serialVersionUID = 8567689731496787661L;
-	List<String> agentNames;
 	private ExploreCoopAgentFSM myAgent;
 
 	public ReceiveMapStateBeha (final AbstractDedaleAgent myagent) {
 		super(myagent);
 		myAgent = (ExploreCoopAgentFSM) myagent;
-		agentNames = myAgent.getVoisins();
 	}
 
 	@Override
@@ -34,7 +32,8 @@ public class ReceiveMapStateBeha extends OneShotBehaviour{
 		exp.setTime(exp.getTime() + 1000);
 
 		// Reception de la map
-		int nbCartesAttendues = myAgent.getVoisins().size();
+		int nbCartesAttendues = myAgent.getNbCartesAttendues();
+		System.out.println(this.myAgent.getLocalName() + "--- I expect " + nbCartesAttendues + " maps ");
 		int cptAgents = 0;
 
 		MessageTemplate msgTemplate = MessageTemplate.and(
@@ -54,9 +53,9 @@ public class ReceiveMapStateBeha extends OneShotBehaviour{
 				}
 				this.myAgent.mergeMap(sgreceived);
 				cptAgents++;
-				myAgent.updateAgentMap(shareReceived.getSender().getLocalName(), this.myAgent.getMyMap().getSerializableGraph());
+				myAgent.updateAgentMap(shareReceived.getSender().getLocalName(), sgreceived);
 			}
 		}
-		this.myAgent.setVoisins(new ArrayList<String>());
+		this.myAgent.setVoisins(new ArrayList<String>(), 0);
 	}
 }

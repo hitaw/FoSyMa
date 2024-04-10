@@ -39,6 +39,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	private static final long serialVersionUID = -7969469610241668140L;
 	public static final int ExchangeTimeout = 5;
+	private boolean hunting = false;
 	private MapRepresentation myMap;
 	
 	// State names 
@@ -48,9 +49,12 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	private static final String D = "ReceiveMap";
 	private static final String E = "SendMap";
 	private static final String F = "Gathering";
+	private static final String G = "Diagnostic";
+	private static final String H = "WaitAnswerHunt";
 	public static final int MaxStuck = 2;
 
 	private List<String> voisins = new ArrayList<String>();
+	private int nbCartesAttendues = 0;
 	private Map<String,Integer> recents = new HashMap<String,Integer>();
 	private Map<String, MapRepresentation> receivedMaps = new HashMap<String, MapRepresentation>();
 	private Date expiration = new Date();
@@ -69,6 +73,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	 */
 	protected void setup(){
 		super.setup();
+		this.hunting = false;
 		
 		//get the parameters added to the agent at creation (if any)
 		final Object[] args = getArguments();
@@ -101,7 +106,9 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerState(new SendMapStateBeha(this), E);
 		fsm.registerState(new ReceiveMapStateBeha(this), D);
 		fsm.registerState(new WalkStateBeha(this, list_agentNames), C);
-		fsm.registerLastState(new GatheringStateBeha(this, list_agentNames), F);
+		fsm.registerState(new GatheringStateBeha(this, list_agentNames), F);
+		fsm.registerState(new DiagnoticStateBeha(this, list_agentNames), G);
+		fsm.registerState(new WaitAnswerHuntStateBeha(this), H);
 		
 		// Register the transitions
 		fsm.registerDefaultTransition(A, B);
@@ -111,8 +118,13 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerTransition(C, A, 1);
 		fsm.registerTransition(C, F, 0);
 		fsm.registerDefaultTransition(D, B);
-		fsm.registerDefaultTransition(E, D);
-		fsm.registerDefaultTransition(F,F);
+		fsm.registerTransition(E, D, 0);
+		fsm.registerTransition(E, F, 1);
+		fsm.registerDefaultTransition(F,H);
+		fsm.registerTransition(H,H,0);
+		fsm.registerTransition(H, E,1);
+		fsm.registerTransition(H, F,2);
+
 
 		lb.add(fsm);
 		
@@ -134,9 +146,14 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		voisins.addAll(set);
 		return voisins;
 	}
-    public void setVoisins(List<String> v) {
+    public void setVoisins(List<String> v, int nbCartesAttendues) {
         voisins = v;
+		this.nbCartesAttendues = nbCartesAttendues;
     }
+
+	public int getNbCartesAttendues() {
+		return nbCartesAttendues;
+	}
 
     public void addVoisin(String s, Integer i) {
         voisins.add(s);
@@ -181,11 +198,16 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	}
 
 	public void ageRecent() {
+		System.out.println(this.getLocalName() + "---" + recents);
+		List<String> toRemove = new ArrayList<>();
 		for (String key : recents.keySet()) {
 			recents.put(key, recents.get(key) + 1);
 			if (recents.get(key) > ExchangeTimeout) {
-				recents.remove(key);
+				toRemove.add(key);
 			}
+		}
+		for (String s : toRemove) {
+			recents.remove(s);
 		}
 	}
 
@@ -218,8 +240,10 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		return false;
 	}
 	public void addRemovedEdge(Edge e) {
-		System.out.println("Agent "+this.getLocalName()+" -- removed edge "+e.getId());
-		edgesRemoved.put(e, 0);
+		if (e != null) {
+			System.out.println("Agent "+this.getLocalName()+" -- removed edge "+e.getId());
+			edgesRemoved.put(e, 0);
+		}
 	}
 
 	public void ageRemovedEdges() {
@@ -232,6 +256,10 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		for (Edge key : edgesRemoved.keySet()) {
 			this.myMap.addEdge(key.getSourceNode().getId(), key.getTargetNode().getId(), key.getId(), this.getLocalName());
 		}
+	}
+
+	public void clearRemovedEdges() {
+		this.edgesRemoved = new HashMap<Edge, Integer>();
 	}
 
 	public MapRepresentation getAgentMap(String agentName) {
@@ -254,4 +282,12 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
         m.mergeMap(map);
         receivedMaps.put(agentName, m);
     }
+
+	public boolean isHunting() {
+		return hunting;
+	}
+
+	public void setHunting(boolean hunting) {
+		this.hunting = hunting;
+	}
 }

@@ -3,6 +3,7 @@ package eu.su.mas.dedaleEtu.mas.behaviours.custom;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import jade.core.behaviours.OneShotBehaviour;
@@ -15,9 +16,10 @@ public class WaitAnswerStateBeha extends OneShotBehaviour {
 	
 	private static final long serialVersionUID = 8567689731496787661L;
 	
-	private List<String> listReceiver;
+	private List<String> listReceiver = new ArrayList<>();
+	int nbCartesAttendues = 0;
 	private ExploreCoopAgentFSM myAgent;
-	Boolean end = false;
+	Boolean end;
 
 
 	public WaitAnswerStateBeha (final AbstractDedaleAgent myagent) {
@@ -27,7 +29,9 @@ public class WaitAnswerStateBeha extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+		end = false;
 		listReceiver  = new ArrayList<String>();
+		nbCartesAttendues = 0;
 	//Reception de ping + envoi du yes
 		Date expiration = myAgent.getExpiration();
 	
@@ -40,7 +44,7 @@ public class WaitAnswerStateBeha extends OneShotBehaviour {
 				MessageTemplate.MatchPerformative(ACLMessage.AGREE));
 
 		if (expiration.before(new Date())) {
-			System.out.println("Agent "+this.myAgent.getLocalName()+" -- expiration date reached");
+//			System.out.println("Agent "+this.myAgent.getLocalName()+" -- expiration date reached");
 			end = true;
 		}
 
@@ -50,11 +54,12 @@ public class WaitAnswerStateBeha extends OneShotBehaviour {
 		ACLMessage yes = new ACLMessage(ACLMessage.AGREE);
 		yes.setProtocol("YES");
 		yes.setSender(this.myAgent.getAID());
-		System.out.println("Agent " +this.myAgent.getLocalName() + "-- is looking for ping");
+//		System.out.println("Agent " +this.myAgent.getLocalName() + "-- is looking for ping");
 		while (pingReceived != null) {
 			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received ping from "+pingReceived.getSender().getLocalName());
 			yes.addReceiver(pingReceived.getSender());
 			listReceiver.add(pingReceived.getSender().getLocalName());
+			nbCartesAttendues += 1;
 			pingReceived = this.myAgent.receive(pingTemplate);
 		}
 		if (yes.getAllReceiver().hasNext()) {
@@ -62,20 +67,25 @@ public class WaitAnswerStateBeha extends OneShotBehaviour {
 		}
 
 		//check if YES received
-		System.out.println("Agent " +this.myAgent.getLocalName() + "-- is looking for yes");
+//		System.out.println("Agent " +this.myAgent.getLocalName() + "-- is looking for yes");
 
 		ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
 		while (msgReceived != null) {
-			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received yes from "+msgReceived.getSender().getName());
-			listReceiver.add(msgReceived.getSender().getLocalName());
+			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received yes from "+msgReceived.getSender().getLocalName());
+			if (!Objects.equals(msgReceived.getContent(), "Explo done")){
+				listReceiver.add(msgReceived.getSender().getLocalName()); // We won't send a map to an agent done with exploration
+			} else {
+				System.out.println(this.myAgent.getLocalName() + " --- I will receive a full map");
+			}
+			nbCartesAttendues += 1;
 			msgReceived = this.myAgent.receive(msgTemplate);
 		}
-		myAgent.setVoisins(listReceiver);
+		myAgent.setVoisins(listReceiver, nbCartesAttendues);
 	}
 
 	@Override
 	public int onEnd() {
-		if (!listReceiver.isEmpty()) {
+		if (nbCartesAttendues != 0) {
 			return 1;
 		}
 		if (end) {

@@ -66,12 +66,12 @@ public class WalkStateBeha extends OneShotBehaviour {
 		if (myPosition!=null){
 			//List of observable from the agent's current position
 			List<Couple<Location,List<Couple<Observation,Integer>>>> lobs=((AbstractDedaleAgent)this.myAgent).observe();//myPosition
-			System.out.println(this.myAgent.getLocalName()+" - Observations: "+lobs);
+//			System.out.println(this.myAgent.getLocalName()+" - Observations: "+lobs);
 			/**
 			 * Just added here to let you see what the agent is doing, otherwise he will be too quick
 			 */
 			try {
-				this.myAgent.doWait(10);
+				this.myAgent.doWait(100);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -102,6 +102,8 @@ public class WalkStateBeha extends OneShotBehaviour {
 				//Explo finished
 				System.out.println(this.myAgent.getLocalName()+" - Exploration successufully done, behaviour removed.");
 				myAgent.addAllEdges();
+				myAgent.clearRemovedEdges();
+				myAgent.setHunting(true);
 			} else {
 				if (myAgent.getStuck() > MaxStuck) {
 					myAgent.setStuck(0);

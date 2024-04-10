@@ -44,7 +44,7 @@ public class SendMapStateBeha extends OneShotBehaviour{
 			map.addReceiver(new AID(s,AID.ISLOCALNAME));
 			SerializableSimpleGraph<String, Couple<MapAttribute, Couple<Date, Integer>>> sg = this.myAgent.getDiffAgentMap(s);
 			if (sg != null) {
-				this.myAgent.updateAgentMap(s, sg);
+//				this.myAgent.updateAgentMap(s, sg);
 				try {
 					map.setContentObject(sg);
 				} catch (IOException e) {
@@ -56,5 +56,12 @@ public class SendMapStateBeha extends OneShotBehaviour{
 				System.out.println("Agent "+this.myAgent.getLocalName()+" -- no map to send to "+this.agentNames);
 			}
 		}
+	}
+	@Override
+	public  int onEnd() {
+		if (this.myAgent.isHunting()) {
+			return 1;
+		}
+		return 0;
 	}
 }

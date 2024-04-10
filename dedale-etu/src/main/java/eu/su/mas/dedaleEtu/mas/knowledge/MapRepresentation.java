@@ -219,7 +219,7 @@ public class MapRepresentation implements Serializable {
 			edge = this.g.removeEdge(from, to);
 		}
 		catch (ElementNotFoundException e){
-			System.out.println("Edge not in graph, one node missing");
+			System.out.println("Edge not in graph");
 		}
 		return edge;
 	}
@@ -293,6 +293,9 @@ public class MapRepresentation implements Serializable {
 	public synchronized void advancePlan() {
 		if (plannedItinerary != null && !plannedItinerary.isEmpty()) {
 			plannedItinerary.remove(0);
+		}
+		else {
+			plannedItinerary = null;
 		}
 	}
 
