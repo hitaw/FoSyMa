@@ -19,17 +19,19 @@ public class GatheringStateBeha extends OneShotBehaviour {
         private static final long serialVersionUID = 8567689731496787661L;
 
         private MapRepresentation myMap;
-        private List<String> list_agentNames;
+        private int nbAgents;
         private ExploreCoopAgentFSM myAgent;
+        private boolean talk;
 
 
-        public GatheringStateBeha (AbstractDedaleAgent myagent, List<String> agentNames) {
+        public GatheringStateBeha (AbstractDedaleAgent myagent, int nbAgents) {
             super(myagent);
             myAgent = (ExploreCoopAgentFSM) myagent;
-            this.list_agentNames=agentNames;
+            this.nbAgents = nbAgents;
         }
         @Override
         public void action() {
+            talk = false;
             System.out.println(this.myAgent.getLocalName() +  " -- GatheringStateBeha");
             this.myMap=myAgent.getMyMap();
 
@@ -72,9 +74,10 @@ public class GatheringStateBeha extends OneShotBehaviour {
                     myMap.clearPlannedItinerary(); //The plan that was calculated is no longer valid, we have to calculate a new one
                 }
 
-
-
                 if (myMap.getNextNodePlan() != null) {
+                    if (myMap.destinationInRange(nbAgents)) { //change the argument here to decide when the agents start creating teams
+                        talk = true;
+                    }
                     nextNodeId = myMap.getNextNodePlan();
                 } else {
                     // Walk to node with the highest stench count
@@ -109,5 +112,13 @@ public class GatheringStateBeha extends OneShotBehaviour {
             myAgent.setExpiration(exp);
             myAgent.setMyMap(myMap);
         }
+        @Override
+        public int onEnd() {
+            if (talk) {
+                return 1;
+            }
+            return 0;
+        }
 }
+
 

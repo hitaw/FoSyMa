@@ -17,7 +17,7 @@ public class DiagnoticStateBeha extends OneShotBehaviour {
 
 	private List<String> receivers;
 	private ExploreCoopAgentFSM myAgent;
-
+	private MapRepresentation myMap;
 	public DiagnoticStateBeha(final AbstractDedaleAgent myagent, List<String> agentNames) {
 		super(myagent);
 		this.myAgent = (ExploreCoopAgentFSM) myagent;
@@ -26,27 +26,32 @@ public class DiagnoticStateBeha extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+		myMap = myAgent.getMyMap();
 
-		ACLMessage diag = new ACLMessage(ACLMessage.REQUEST);
-		System.out.println("Agent "+this.myAgent.getLocalName()+" -- send diag to "+receivers);
-		diag.setSender(this.myAgent.getAID());
-		diag.setProtocol("PING");
+//		ACLMessage diag = new ACLMessage(ACLMessage.REQUEST);
+//		System.out.println("Agent "+this.myAgent.getLocalName()+" -- send diag to "+receivers);
+//		diag.setSender(this.myAgent.getAID());
+//		diag.setProtocol("PING");
+//
+//		// Ajout des receivers
+//		//si on a parlé à un agent il y a pas longtemps, on ne le ping pas
+//		Set<String> recents = myAgent.getRecents();
+//		for (String agentName : receivers) {
+//			if (recents.contains(agentName)) {
+//				continue;
+//			}
+//			diag.addReceiver(new AID(agentName, AID.ISLOCALNAME));
+//		}
+//		((AbstractDedaleAgent)this.myAgent).sendMessage(diag);
+//
+//		// Date set à now + 1s
+//		Date exp = new Date();
+//		exp.setTime(exp.getTime() + 100);
+//		myAgent.setExpiration(exp);
 
-		// Ajout des receivers
-		//si on a parlé à un agent il y a pas longtemps, on ne le ping pas
-		Set<String> recents = myAgent.getRecents();
-		for (String agentName : receivers) {
-			if (recents.contains(agentName)) {
-				continue;
-			}
-			diag.addReceiver(new AID(agentName, AID.ISLOCALNAME));
+		if (!myAgent.isAgentOn(myMap.getNextNodePlan())) {
+			String golem = myMap.getNextNodePlan();
 		}
-		((AbstractDedaleAgent)this.myAgent).sendMessage(diag);
-
-		// Date set à now + 1s
-		Date exp = new Date();
-		exp.setTime(exp.getTime() + 100);
-		myAgent.setExpiration(exp);
 	}
 
 }

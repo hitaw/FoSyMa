@@ -26,7 +26,6 @@ public class WalkStateBeha extends OneShotBehaviour {
 	 */
 	private MapRepresentation myMap;
 
-	private List<String> list_agentNames;
 	private ExploreCoopAgentFSM myAgent;
 
 	public static final int TimeoutRemovedEdge = 10;
@@ -34,12 +33,10 @@ public class WalkStateBeha extends OneShotBehaviour {
 /**
  * 
  * @param myagent reference to the agent we are adding this behavior to
- * @param agentNames name of the agents to share the map with
  */
-	public WalkStateBeha(final AbstractDedaleAgent myagent, List<String> agentNames) {
+	public WalkStateBeha(final AbstractDedaleAgent myagent) {
 		super(myagent);
 		myAgent = (ExploreCoopAgentFSM) myagent;
-		this.list_agentNames=agentNames;
 
 	}
 
@@ -107,7 +104,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 			} else {
 				if (myAgent.getStuck() > MaxStuck) {
 					myAgent.setStuck(0);
-					Edge e = myMap.removeEdge(myPosition.getLocationId(), this.myMap.getShortestPathToClosestOpenNode(myPosition.getLocationId()).get(0));
+					Edge e = myMap.removeEdge(myPosition.getLocationId(), this.myMap.getNextNodePlan());
 					myAgent.addRemovedEdge(e);
 					myMap.clearPlannedItinerary(); //The plan that was calculated is no longer valid, we have to calculate a new one
 				}

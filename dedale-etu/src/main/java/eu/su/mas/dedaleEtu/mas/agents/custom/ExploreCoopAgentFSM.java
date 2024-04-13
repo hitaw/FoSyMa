@@ -39,8 +39,11 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	private static final long serialVersionUID = -7969469610241668140L;
 	public static final int ExchangeTimeout = 5;
+	public static final int MaxDistanceGolem = 10; //This determines the distance maximum that a team is going to try to move a golem in order to block it.
+	public static final int MaxTeamDistance = 5; // change this to change the distance max for which two agents will consider that they are hunting the same golem
 	private boolean hunting = false;
 	private MapRepresentation myMap;
+	private List<String> team = new ArrayList<String>();
 	
 	// State names 
 	private static final String A = "SendPing";
@@ -51,12 +54,15 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	private static final String F = "Gathering";
 	private static final String G = "Diagnostic";
 	private static final String H = "WaitAnswerHunt";
+	private static final String I = "SendPingPosState";
+	private static final String J = "TeamBuilding";
 	public static final int MaxStuck = 2;
 
 	private List<String> voisins = new ArrayList<String>();
 	private int nbCartesAttendues = 0;
 	private Map<String,Integer> recents = new HashMap<String,Integer>();
 	private Map<String, MapRepresentation> receivedMaps = new HashMap<String, MapRepresentation>();
+	private Map<String, String> agentsPositions = new HashMap<String, String>();
 	private Date expiration = new Date();
 
 	// the number of times the agent tried to go to the same node and failed
@@ -74,6 +80,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	protected void setup(){
 		super.setup();
 		this.hunting = false;
+		this.team.add(this.getLocalName());
 		
 		//get the parameters added to the agent at creation (if any)
 		final Object[] args = getArguments();
@@ -105,10 +112,12 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerState(new WaitAnswerStateBeha(this), B);
 		fsm.registerState(new SendMapStateBeha(this), E);
 		fsm.registerState(new ReceiveMapStateBeha(this), D);
-		fsm.registerState(new WalkStateBeha(this, list_agentNames), C);
-		fsm.registerState(new GatheringStateBeha(this, list_agentNames), F);
+		fsm.registerState(new WalkStateBeha(this), C);
+		fsm.registerState(new GatheringStateBeha(this, list_agentNames.size()), F);
 		fsm.registerState(new DiagnoticStateBeha(this, list_agentNames), G);
 		fsm.registerState(new WaitAnswerHuntStateBeha(this), H);
+		fsm.registerState(new SendPingPosState(this, list_agentNames), I);
+		fsm.registerState(new TeamBuildingState(this), J);
 		
 		// Register the transitions
 		fsm.registerDefaultTransition(A, B);
@@ -120,10 +129,14 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerDefaultTransition(D, B);
 		fsm.registerTransition(E, D, 0);
 		fsm.registerTransition(E, F, 1);
-		fsm.registerDefaultTransition(F,H);
+		fsm.registerTransition(F,H, 1);
+		fsm.registerTransition(F,I,0);
+		fsm.registerDefaultTransition(I,J);
 		fsm.registerTransition(H,H,0);
 		fsm.registerTransition(H, E,1);
 		fsm.registerTransition(H, F,2);
+		fsm.registerTransition(J, H, 1);
+		fsm.registerTransition(J, J, 0);
 
 
 		lb.add(fsm);
@@ -283,11 +296,32 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
         receivedMaps.put(agentName, m);
     }
 
+	public void updateAgentPosition(String agent, String locationId) {
+		agentsPositions.put(agent, locationId);
+	}
+
 	public boolean isHunting() {
 		return hunting;
 	}
 
 	public void setHunting(boolean hunting) {
 		this.hunting = hunting;
+	}
+
+	public boolean isAgentOn(String location) {
+		return agentsPositions.containsValue(location);
+	}
+
+	public List<String> getTeam() {
+		return team;
+	}
+	public boolean isTeamMember(String agent) {
+		return team.contains(agent);
+	}
+	public boolean addTeamMember(String agent) {
+		return team.add(agent);
+	}
+	public boolean removeTeamMember(String agent) {
+		return team.remove(agent);
 	}
 }

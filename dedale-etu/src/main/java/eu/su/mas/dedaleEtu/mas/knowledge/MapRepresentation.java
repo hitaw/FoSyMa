@@ -290,6 +290,16 @@ public class MapRepresentation implements Serializable {
 		return plannedItinerary.get(0);
 	}
 
+    public String getLastNodePlan() {
+        if (plannedItinerary == null || plannedItinerary.isEmpty()){
+            return null;
+        }
+        return plannedItinerary.get(plannedItinerary.size() - 1);
+    }
+	public boolean destinationInRange(int talkingRange) {
+		return ((plannedItinerary != null) && (plannedItinerary.size() <= talkingRange));
+	}
+
 	public synchronized void advancePlan() {
 		if (plannedItinerary != null && !plannedItinerary.isEmpty()) {
 			plannedItinerary.remove(0);
@@ -419,8 +429,8 @@ public class MapRepresentation implements Serializable {
 			} else {
 				newnode = this.g.getNode(n.getNodeId());
 				// 3 check its attribute. If it is below the one received, update it.
-				if (((String) newnode.getAttribute("ui.class")) == MapAttribute.closed.toString()
-						|| n.getNodeContent().toString() == MapAttribute.closed.toString()) {
+				if (n.getNodeContent().getLeft().toString() == MapAttribute.stench.toString()
+						|| n.getNodeContent().getLeft().toString() == MapAttribute.closed.toString()) {
 					newnode.setAttribute("ui.class", MapAttribute.closed.toString());
 				}
 
@@ -454,7 +464,7 @@ public class MapRepresentation implements Serializable {
 	/**
 	 * If the given map has additional nodes compared to *this* it won't be taken. This only searches for elements that were added on *this*. It is meant to be used to update m
 	 * For example : if it worked on lists : [a,b,c].getDiff([a,b,d]) would return [c]
-	 * TODO renvoyer les nouvelles stench aussi
+	 * TODO renvoyer les nouvelles stench aussi, et ajouter les removed edges
 	 * @param m The smaller map to compare with this
 	 * @return the nodes and edges that were added to the map
 	 */
@@ -465,11 +475,16 @@ public class MapRepresentation implements Serializable {
 			MapAttribute attr = MapAttribute.valueOf((String) n.getAttribute("ui.class"));
 			Date stenchDate = (Date) n.getAttribute("stench.date");
 			int stenchCount = (Integer) n.getAttribute("stench.count");
+
 			if (m.g.getNode(n.getId()) == null) {
 				diff.addNode(n.getId(), attr, stenchDate, stenchCount);
-			} else { // if a node changed status from open to closed, add it to diff TODO closed stench
-				if (n.getAttribute("ui.class") != m.g.getNode(n.getId()).getAttribute("ui.class")) {
-					diff.addNode(n.getId(), MapAttribute.closed, stenchDate, stenchCount);
+			} else { // if a node changed status from open to closed, add it to diff
+				String nAttribute = n.getAttribute("ui.class").toString();
+				String mAttribute = m.g.getNode(n.getId()).getAttribute("ui.class").toString();
+
+				// Since this function is meant to compare a map with a new version of it, if there is a status change, we keep the version stored in *this*
+				if (!Objects.equals(nAttribute, mAttribute)) {
+					diff.addNode(n.getId(), MapAttribute.valueOf(nAttribute), stenchDate, stenchCount);
 				}
 			}
 		}
@@ -510,4 +525,25 @@ public class MapRepresentation implements Serializable {
 		}
 		return res.getId();
 	}
+
+    public List<String> getNodesArityMax(int maxArity) {
+        List<String> res = new ArrayList<>();
+        for (Node n : this.g) {
+            if (n.getDegree() <= maxArity) {
+                res.add(n.getId());
+            }
+        }
+        return res;
+    }
+
+    public List<String> getCloseNodesMaxArity(int maxArity, int maxDistance, String posId) {
+        List<String> possibleNodes = getNodesArityMax(maxArity);
+        List<String> res = new ArrayList<String>();
+        for (String node : possibleNodes) {
+            if (getShortestPath(posId, node).size() <= maxDistance) {
+                res.add(node);
+            }
+        }
+        return res;
+    }
 }

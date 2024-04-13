@@ -2,14 +2,21 @@ package eu.su.mas.dedaleEtu.mas.behaviours.custom;
 
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM;
+import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
+import jade.core.AID;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.MaxTeamDistance;
 
 
 public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
@@ -18,8 +25,9 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 
 	private List<String> listReceiver;
 	private ExploreCoopAgentFSM myAgent;
-	Boolean end = false;
+	private List<String> team = new ArrayList<String>();
 
+	boolean end = false;
 
 	public WaitAnswerHuntStateBeha(final AbstractDedaleAgent myagent) {
 		super(myagent);
@@ -28,17 +36,17 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 
 	@Override
 	public void action() {
-		listReceiver  = new ArrayList<String>();
-	//Reception de ping + envoi du yes
+		end = false;
 		Date expiration = myAgent.getExpiration();
-	
+
+		/*------------------------- map sharing with the other agents -----------------------------*/
+		// Deal with agents that didn't finish exploration first
+		listReceiver  = new ArrayList<String>();
+		//Reception de ping + envoi du yes
+
 		MessageTemplate pingTemplate = MessageTemplate.and(
 				MessageTemplate.MatchProtocol("PING"),
 				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
-
-//		MessageTemplate msgTemplate = MessageTemplate.and(
-//				MessageTemplate.MatchProtocol("YES"),
-//				MessageTemplate.MatchPerformative(ACLMessage.AGREE));
 
 		if (expiration.before(new Date())) {
 			System.out.println("Agent "+this.myAgent.getLocalName()+" -- expiration date reached");
@@ -54,7 +62,6 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 //		System.out.println("Agent " +this.myAgent.getLocalName() + "-- is looking for ping");
 		while (pingReceived != null) {
 //			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received ping from "+pingReceived.getSender().getLocalName());
-			// TODO differencier les différents pings qu'on aura
 			yes.addReceiver(pingReceived.getSender());
 			yes.setContent("Explo done");
 			System.out.println(this.myAgent.getLocalName()+ "-- in hunt received ping from "+pingReceived.getSender().getLocalName());
@@ -64,17 +71,81 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 		if (yes.getAllReceiver().hasNext()) {
 			((AbstractDedaleAgent)this.myAgent).sendMessage(yes);
 		}
-
-		//check if YES received
-//		System.out.println("Agent " +this.myAgent.getLocalName() + "-- is looking for yes");
-
-//		ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
-//		while (msgReceived != null) {
-////			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received yes from "+msgReceived.getSender().getName());
-//			if (!Objects.equals(msgReceived.getContent(), "Explo done")) listReceiver.add(msgReceived.getSender().getLocalName()); // We won't send a map to an agent done with exploration
-//			msgReceived = this.myAgent.receive(msgTemplate);
-//		}
 		myAgent.setVoisins(listReceiver, 0);
+
+		/*---------------------------------------------- team building -------------------------------------*/
+		Pattern p = Pattern.compile("[a-zA-Z]+");
+		Matcher m;
+		//check if PROPOSE received
+		MessageTemplate offerTemplate = MessageTemplate.and(
+				MessageTemplate.MatchProtocol("JOIN"),
+				MessageTemplate.MatchPerformative(ACLMessage.PROPOSE));
+
+		// Message to warn our team of new member(s)
+		ACLMessage updateTeam = new ACLMessage(ACLMessage.INFORM);
+		updateTeam.setProtocol("TEAM");
+		updateTeam.setSender(this.myAgent.getAID());
+
+		boolean update = false; // If there is no offer, we won't send an update to our team members
+
+//		System.out.println("Agent " +this.myAgent.getLocalName() + "-- is looking for offer");
+		ACLMessage offerReceived = this.myAgent.receive(offerTemplate);
+		while (offerReceived != null) {
+			String sender = offerReceived.getSender().getLocalName();
+			String content = offerReceived.getContent();
+
+			System.out.println(this.myAgent.getLocalName()+ "-- received offer from "+sender);
+			team = myAgent.getTeam();
+			// We parse the string received (a list.toString) to extract the agents in the team
+			m = p.matcher(content);
+			// This should at least contain the sender's name
+			while (m.find()) {
+				String agent = m.group();
+				if (!team.contains(agent)) {
+					update = true; // We added an agent to our team
+					myAgent.addTeamMember(agent);
+					team = myAgent.getTeam();
+				}
+			}
+			offerReceived = this.myAgent.receive(offerTemplate);
+		}
+		//check if update received
+		MessageTemplate updateTemplate = MessageTemplate.and(
+				MessageTemplate.MatchProtocol("TEAM"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+
+		ACLMessage updateReceived = this.myAgent.receive(updateTemplate);
+		while (updateReceived != null) {
+			String content = updateReceived.getContent();
+			System.out.println(this.myAgent.getLocalName()+ "-- received update from "+updateReceived.getSender().getLocalName());
+			team = myAgent.getTeam();
+			// We parse the string received (a list.toString) to extract the agents in the team
+			m = p.matcher(content);
+			// This should at least contain the sender's name
+			while (m.find()) {
+				String agent = m.group();
+				if (!team.contains(agent)) {
+					update = true;
+					myAgent.addTeamMember(agent);
+					team = myAgent.getTeam();
+				}
+			}
+			updateReceived = this.myAgent.receive(updateTemplate);
+		}
+
+		if (update) { // If we added agent(s) to our team, we warn the team, including the agent(s) we just added to warn we accepted their proposal
+			for (String agent : team) {
+				System.out.println(this.myAgent.getLocalName()+ "-- add receiver to update team -- " + agent);
+				if (Objects.equals(agent, this.myAgent.getLocalName())) {
+					System.out.println("That's me");
+					continue;
+				}
+				updateTeam.addReceiver(new AID(agent,AID.ISLOCALNAME));
+			}
+			updateTeam.setContent(team.toString());
+			System.out.println(this.myAgent.getLocalName()+ "-- send update to team -- " + team.toString());
+			((AbstractDedaleAgent)this.myAgent).sendMessage(updateTeam);
+		}
 	}
 
 	@Override
