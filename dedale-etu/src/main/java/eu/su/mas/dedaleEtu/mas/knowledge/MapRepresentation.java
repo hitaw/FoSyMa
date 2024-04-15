@@ -584,6 +584,7 @@ public class MapRepresentation implements Serializable {
 		Stream<Node> nodes = n.neighborNodes();
 		Stream<Stream<Node>> furtherNodes = nodes.map(Node::neighborNodes);
 		furtherNodes.forEach(s -> s.forEach(n2 -> res.add(n2.getId())));
+        res.remove(node);
 		return new ArrayList<>(res);
 	}
 

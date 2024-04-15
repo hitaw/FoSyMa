@@ -57,6 +57,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	private static final String H = "WaitAnswerHunt";
 	private static final String I = "SendPingPosState";
 	private static final String J = "TeamBuilding";
+	private static final String K = "TeamStrategy";
 	public static final int MaxStuck = 2;
 
 	private List<String> voisins = new ArrayList<String>();
@@ -119,6 +120,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerState(new WaitAnswerHuntStateBeha(this), H);
 		fsm.registerState(new SendPingPosState(this, list_agentNames), I);
 		fsm.registerState(new TeamBuildingState(this), J);
+		fsm.registerState(new TeamStrategyState(this), K);
 		
 		// Register the transitions
 		fsm.registerDefaultTransition(A, B);
@@ -138,6 +140,8 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerTransition(H, F,2);
 		fsm.registerTransition(J, H, 1);
 		fsm.registerTransition(J, J, 0);
+		fsm.registerTransition(H, K, 3);
+		fsm.registerDefaultTransition(K,I);
 
 
 		lb.add(fsm);

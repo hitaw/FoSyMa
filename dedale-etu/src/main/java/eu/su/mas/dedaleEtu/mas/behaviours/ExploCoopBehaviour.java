@@ -130,7 +130,7 @@ public class ExploCoopBehaviour extends SimpleBehaviour {
 					try {
 						sgreceived = (SerializableSimpleGraph<String, Couple<MapAttribute, Couple<Date, Integer>>>)msgReceived.getContentObject();
 					} catch (UnreadableException e) {
-						// TODO Auto-generated catch block
+						// Auto-generated catch block
 						e.printStackTrace();
 					}
 					this.myMap.mergeMap(sgreceived);

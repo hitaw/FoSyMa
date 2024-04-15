@@ -609,7 +609,7 @@ public class Principal {
 		try {
 			ag = initialContainer.createNewAgent(agentName,className,res2);
 		} catch (StaleProxyException e) {
-			// TODO Auto-generated catch block
+			// Auto-generated catch block
 			e.printStackTrace();
 		}
 		Assert.assertNotNull(ag);

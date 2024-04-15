@@ -82,10 +82,11 @@ public class TeamStrategyState extends OneShotBehaviour {
 				// On choisit le noeud qui nous intéresse pour bloquer le golem et on fait un ligne derrière lui
 				objectifGolem = choiceNode(); //TODO
 				line = myMap.neighborLine(posGolem, objectifGolem);
-				String nextGolemStep = myMap.getShortestPath(posGolem, objectifGolem).get(0); // Hope is sweet
+				List<String> golemPath = myMap.getShortestPath(posGolem, objectifGolem); // Hope is sweet
+				String nextGolemStep = golemPath.isEmpty() ? posGolem : golemPath.get(0);
 				nextLine = myMap.neighborLine(nextGolemStep, objectifGolem);
-				msg.setContent(this.iteration + ":"+ line.toString() +";" +this.iteration+1 + ":" + nextLine.toString()+ ";" + objectifGolem);
-				iteration++;
+				msg.setContent(this.iteration + ":"+ line.toString() +";" +this.iteration++ + ":" + nextLine.toString()+ ";" + objectifGolem);
+//				iteration++;
 			}
 			else { // There is no interesting nodes for our team, we need more agents
 				msg.setContent("null");
@@ -163,6 +164,12 @@ public class TeamStrategyState extends OneShotBehaviour {
 		if (this.myMap == null) {
 			this.myMap = new MapRepresentation();
 		}
+		myAgent.ageRemovedEdges(); // On vieillit les arêtes retirées
+		Edge ed = this.myAgent.getEdge(); // Un effectue cette action une fois par itération, et on ne peut enlever qu'une arête par itération donc une seule peut avoir dépassé le temps limite
+		if (ed != null) {
+			System.out.println("Agent "+this.myAgent.getLocalName()+" -- adding edge "+ed.getId());
+			this.myMap.addEdge(ed.getSourceNode().getId(), ed.getTargetNode().getId(), ed.getId(), this.myAgent.getLocalName());
+		}
 
 		//0) Retrieve the current position
 		Location myPosition=((AbstractDedaleAgent)this.myAgent).getCurrentPosition();
@@ -193,7 +200,7 @@ public class TeamStrategyState extends OneShotBehaviour {
 				this.myMap.addNewNode(accessibleNode.getLocationId(), stench); // this also updates the stench date on already existing nodes
 			}
 
-			if (line == null) {
+			while (line == null) {
 				calculatePlan();
 			}
 			if (myMap.getNextNodePlan() != null) {
@@ -209,7 +216,7 @@ public class TeamStrategyState extends OneShotBehaviour {
 						nextNodeId = myPosition.getLocationId();
 					}
 				} else {
-					nextNodeId = myPosition.getLocationId();
+					nextNodeId = myPosition.getLocationId(); // En l'abscence d'information on ne bouge pas pour l'instant, après on essaiera de rester à portée du chef
 				}
 			}
 			if (this.myAgent.moveTo(new gsLocation(nextNodeId))) { // Si ça marche pas on a rencontré le golem ?
@@ -217,8 +224,8 @@ public class TeamStrategyState extends OneShotBehaviour {
 				myAgent.setStuck(0);
 				line = nextLine;
 				nextLine = null;
-//			} else {
-//				myAgent.setStuck(myAgent.getStuck() + 1);
+			} else {
+				myAgent.setStuck(myAgent.getStuck() + 1); // TODO if stuck !=0 on considère qu'on est face au golem ?
 			}
 
 		}
