@@ -68,14 +68,16 @@ public class WalkStateBeha extends OneShotBehaviour {
 			 * Just added here to let you see what the agent is doing, otherwise he will be too quick
 			 */
 			try {
-				this.myAgent.doWait(100);
+				this.myAgent.doWait(500);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 
 			//1) remove the current node from openlist and add it to closedNodes.
 			Couple<Location, List<Couple<Observation, Integer>>> obs = lobs.get(0);
-			this.myMap.addNode(myPosition.getLocationId(), MapAttribute.closed, !obs.getRight().isEmpty() && (obs.getRight().get(0).getLeft().toString().equals("Stench")));
+			boolean stinks = !obs.getRight().isEmpty() && (obs.getRight().get(0).getLeft().toString().equals("Stench"));
+			this.myMap.addNode(myPosition.getLocationId(), MapAttribute.closed, stinks);
+//			System.out.println(this.myAgent.getLocalName()+" - stinks : " + stinks);
 
 			//2) get the surrounding nodes and, if not in closedNodes, add them to open nodes.
 			String nextNodeId=null;

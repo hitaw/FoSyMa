@@ -358,6 +358,7 @@ public class Principal {
 		agentName="Elsa";
 
 		//3) If you want to give specific parameters to your agent, add them here
+//		Object [] entityParametersExplo1={};
 		Object [] entityParametersExplo1={"Tim", "Marthe"};
 
 		//4) Give the class name of your agent to let the system instantiate it
@@ -385,8 +386,8 @@ public class Principal {
 
 		agentList.add(ag);
 
-		//		
-		//		
+		//
+		//
 		/*********
 		 * AGENT Explo3
  		*********/

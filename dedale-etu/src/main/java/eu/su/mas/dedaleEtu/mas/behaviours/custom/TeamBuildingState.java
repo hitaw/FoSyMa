@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.List;
 
 import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.MaxTeamDistance;
+import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
 
 public class TeamBuildingState extends OneShotBehaviour {
 
@@ -19,6 +20,7 @@ public class TeamBuildingState extends OneShotBehaviour {
 
 	private ExploreCoopAgentFSM myAgent;
 	private List<String> team;
+	private MapRepresentation myMap;
 	private boolean end = false;
 
 	public TeamBuildingState(final AbstractDedaleAgent myagent) {
@@ -34,16 +36,16 @@ public class TeamBuildingState extends OneShotBehaviour {
 		Date expiration = myAgent.getExpiration();
 
 		if (expiration.before(new Date())) {
+			System.out.println("Agent "+this.myAgent.getLocalName()+" -- " + team);
 			System.out.println("Agent "+this.myAgent.getLocalName()+" -- team building expiration date reached");
 			end = true;
 		}
 
-		MapRepresentation myMap = myAgent.getMyMap();
+		myMap = myAgent.getMyMap();
 		if(myMap ==null) {
 			this.myAgent.setMyMap(new MapRepresentation());
 			myMap = myAgent.getMyMap();
 		}
-		List<String> possibleNodes = myMap.getCloseNodesMaxArity(team.size(), ExploreCoopAgentFSM.MaxDistanceGolem, myAgent.getCurrentPosition().getLocationId());
 
 		// Recevoir les positions des autres agents et leur proposer de rejoindre notre team si on chasse le même golem
 		MessageTemplate msgTemplate = MessageTemplate.and(
@@ -64,26 +66,32 @@ public class TeamBuildingState extends OneShotBehaviour {
 			String location = info[0];
 			String destination = info[1];
 
-			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received inform from "+msgReceived.getSender().getLocalName() + " : " + location + "destination : " + destination);
+			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received inform from "+msgReceived.getSender().getLocalName() + " : " + location + " destination : " + destination);
 			myAgent.updateAgentPosition(sender, location);
-			if (myMap.getShortestPath(myMap.getLastNodePlan(), destination).size() < MaxTeamDistance) {
-				// offer to join team if we hunt the same golem and we are not yet in the same team ofc
+			String myDestination = myMap.getLastNodePlan() != null ? myMap.getLastNodePlan() : myAgent.getCurrentPosition().getLocationId();
+			List<String> shortestPath = myMap.getShortestPath(myDestination, destination);
+			if ((shortestPath != null) && (shortestPath.size() < MaxTeamDistance)) {
+				// offer to join team if we hunt the same golem, and we are not yet in the same team ofc
 				if (!team.contains(sender)) {
 					offer.addReceiver(new AID(sender, AID.ISLOCALNAME));
 					System.out.println("Agent "+this.myAgent.getLocalName()+" -- send join to "+sender);
+					// If we are joining a team, we go to the same destination to keep together
+					myMap.setPlannedItinerary(myMap.getShortestPath(myAgent.getCurrentPosition().getLocationId(), destination));
+					//TODO not sure about this
 				}
 			}
 
 			msgReceived = this.myAgent.receive(msgTemplate);
 		}
 		((AbstractDedaleAgent)this.myAgent).sendMessage(offer);
-
-		myAgent.setExpiration(new Date(new Date().getTime() + 100));
-
 	}
 
 	@Override
 	public int onEnd() {
-		return end ? 1 : 0;
+		if (end) {
+			myAgent.setExpiration(new Date(new Date().getTime() + WaitTime));
+			return 1;
+		}
+		return 0;
 	}
 }

@@ -11,6 +11,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
+import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
+
 public class SendPingPosState extends OneShotBehaviour {
 
 	private static final long serialVersionUID = 8567689731496787661L;
@@ -52,7 +54,7 @@ public class SendPingPosState extends OneShotBehaviour {
 
 		// Date set à now + 0.1s
 		Date exp = new Date();
-		exp.setTime(exp.getTime() + 100);
+		exp.setTime(exp.getTime() + WaitTime);
 		myAgent.setExpiration(exp);
 	}
 

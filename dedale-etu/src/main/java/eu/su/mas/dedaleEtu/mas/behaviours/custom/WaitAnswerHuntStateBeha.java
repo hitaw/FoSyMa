@@ -8,7 +8,6 @@ import jade.core.behaviours.OneShotBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -26,6 +25,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 	private List<String> listReceiver;
 	private ExploreCoopAgentFSM myAgent;
 	private List<String> team = new ArrayList<String>();
+	private MapRepresentation myMap;
 
 	boolean end = false;
 
@@ -154,10 +154,10 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 			return 1;
 		}
 		if (end) {
+			if (team.size() > 1) return 3;
 			return 2;
 		}
 		return 0;
 	}
-
 
 }

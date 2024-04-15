@@ -38,9 +38,10 @@ import org.graphstream.graph.Edge;
 public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	private static final long serialVersionUID = -7969469610241668140L;
-	public static final int ExchangeTimeout = 5;
-	public static final int MaxDistanceGolem = 10; //This determines the distance maximum that a team is going to try to move a golem in order to block it.
-	public static final int MaxTeamDistance = 5; // change this to change the distance max for which two agents will consider that they are hunting the same golem
+	public static final int ExchangeTimeout = 3;
+	public static final int MaxDistanceGolem = 3; //This determines the distance maximum that a team is going to try to move a golem in order to block it.
+	public static final int MaxTeamDistance = 3; // change this to change the distance max for which two agents will consider that they are hunting the same golem
+	public static final int WaitTime = 100;
 	private boolean hunting = false;
 	private MapRepresentation myMap;
 	private List<String> team = new ArrayList<String>();

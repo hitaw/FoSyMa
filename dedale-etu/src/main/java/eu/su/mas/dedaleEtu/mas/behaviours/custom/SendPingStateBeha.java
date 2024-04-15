@@ -11,6 +11,8 @@ import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import jade.core.AID;
 import jade.lang.acl.ACLMessage;
 
+import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
+
 public class SendPingStateBeha extends OneShotBehaviour {
 	
 	private static final long serialVersionUID = 8567689731496787661L;
@@ -49,9 +51,9 @@ public class SendPingStateBeha extends OneShotBehaviour {
 		}
 		((AbstractDedaleAgent)this.myAgent).sendMessage(ping);
 
-		// Date set à now + 0.1s
+		// Date set à now + WaitTime s
 		Date exp = new Date();
-		exp.setTime(exp.getTime() + 100);
+		exp.setTime(exp.getTime() + WaitTime);
 		myAgent.setExpiration(exp);
 	}
 

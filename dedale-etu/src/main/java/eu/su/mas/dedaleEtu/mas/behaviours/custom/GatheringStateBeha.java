@@ -65,7 +65,7 @@ public class GatheringStateBeha extends OneShotBehaviour {
                     this.myMap.addNewNode(accessibleNode.getLocationId(), stench); // this also updates the stench date on already existing nodes
                 }
 
-                String nextNodeId=null;
+                String nextNodeId = null;
 
                 if (myAgent.getStuck() > MaxStuck) {
                     myAgent.setStuck(0);
@@ -106,11 +106,7 @@ public class GatheringStateBeha extends OneShotBehaviour {
                     myAgent.setStuck(myAgent.getStuck() + 1);
                 }
             }
-            // Date set à now + 0.1s
-            Date exp = new Date();
-            exp.setTime(exp.getTime() + 100);
-            myAgent.setExpiration(exp);
-            myAgent.setMyMap(myMap);
+            this.myAgent.setMyMap(myMap);
         }
         @Override
         public int onEnd() {

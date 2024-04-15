@@ -3,6 +3,7 @@ package eu.su.mas.dedaleEtu.mas.knowledge;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.graphstream.algorithm.Dijkstra;
 import org.graphstream.graph.Edge;
@@ -98,26 +99,26 @@ public class MapRepresentation implements Serializable {
 	 */
 	public synchronized void addNode(String id, MapAttribute mapAttribute) {
 		Node n;
-		Date stench = null;
+		int stench = 0;
 		if (this.g.getNode(id) == null) {
 			n = this.g.addNode(id);
 		} else {
 			n = this.g.getNode(id);
-			stench = (Date) n.getAttribute("stench.date");
+			stench = (Integer) n.getAttribute("stench.count");
 		}
 		n.clearAttributes();
-        if (stench != null) {
-            if (mapAttribute == MapAttribute.open) {
-                mapAttribute = MapAttribute.openStench;
-            }
-            if (mapAttribute == MapAttribute.closed) {
-                mapAttribute = MapAttribute.stench;
-            }
-        }
+		if (stench>0) {
+			if (mapAttribute == MapAttribute.open) {
+				mapAttribute = MapAttribute.openStench;
+			} else if (mapAttribute == MapAttribute.closed) {
+				mapAttribute = MapAttribute.stench;
+			}
+		}
+
 		n.setAttribute("ui.class", mapAttribute.toString());
 		n.setAttribute("ui.label", id);
-		n.setAttribute("stench.date", stench);
-		n.setAttribute("stench.count", 0);
+		n.setAttribute("stench.date", new Date());
+		n.setAttribute("stench.count", stench);
 	}
 
 	public synchronized void addNode(String id, MapAttribute mapAttribute, boolean stench) {
@@ -131,12 +132,19 @@ public class MapRepresentation implements Serializable {
             if (mapAttribute == MapAttribute.closed) {
                 mapAttribute = MapAttribute.stench;
             }
-        }
+        } else {
+			n.setAttribute("stench.count", 0);
+		}
         n.setAttribute("ui.class", mapAttribute.toString());
         n.setAttribute("stench.date", new Date());
 	}
 
 	public synchronized void addNode(String id, MapAttribute mapAttribute, Date dateStench, int countStench) {
+        if ((countStench > 0) && (mapAttribute == mapAttribute.closed)) {
+            mapAttribute = mapAttribute.stench;
+        } else if ((countStench > 0) && (mapAttribute == mapAttribute.open)) {
+            mapAttribute = mapAttribute.openStench;
+        }
 		addNode(id, mapAttribute);
 		Node n = this.g.getNode(id);
 		n.setAttribute("stench.date", dateStench);
@@ -158,18 +166,19 @@ public class MapRepresentation implements Serializable {
 
         // Updates the status to update the color of the node
         Node n = this.g.getNode(id);
-        String c = (String) n.getAttribute("ui.class");
+        String nodeClass = (String) n.getAttribute("ui.class");
+		// Si le noeud n'était pas puant et qu'on dit qu'il l'est, on change sa classe à stench
         if ((Integer)n.getAttribute("stench.count") == 0 && stench) {
-            if (c == MapAttribute.open.toString()) {
+            if (nodeClass == MapAttribute.open.toString()) {
                 n.setAttribute("ui.class", MapAttribute.openStench.toString());
-            } else if (c == MapAttribute.closed.toString()) {
+            } else if (nodeClass == MapAttribute.closed.toString()) {
                 n.setAttribute("ui.class", MapAttribute.stench.toString());
             }
-        } else if ((Integer)n.getAttribute("stench.count") != 0 && !stench) {
+        } else if (!stench) { // S'il n'y a pas d'odeur on retire la couleur d'odeur et le compte
 			n.setAttribute("stench.count", 0);
-            if (c == MapAttribute.openStench.toString()) {
+            if (nodeClass == MapAttribute.openStench.toString()) {
                 n.setAttribute("ui.class", MapAttribute.open.toString());
-            } else if (c == MapAttribute.stench.toString()) {
+            } else if (nodeClass == MapAttribute.stench.toString()) {
                 n.setAttribute("ui.class", MapAttribute.closed.toString());
             }
         }
@@ -236,6 +245,9 @@ public class MapRepresentation implements Serializable {
 	 */
 	public synchronized List<String> getShortestPath(String idFrom, String idTo) {
 		List<String> shortestPath = new ArrayList<String>();
+        if (idFrom == idTo) {
+            return shortestPath;
+        }
 
 		Dijkstra dijkstra = new Dijkstra();// number of edge
 		dijkstra.init(g);
@@ -406,8 +418,6 @@ public class MapRepresentation implements Serializable {
 	}
 
 	public void mergeMap(SerializableSimpleGraph<String, Couple<MapAttribute, Couple<Date, Integer>>> sgreceived) {
-		// System.out.println("You should decide what you want to save and how");
-		// System.out.println("We currently blindly add the topology");
 
 		for (SerializableNode<String, Couple<MapAttribute, Couple<Date, Integer>>> n : sgreceived.getAllNodes()) {
 			// System.out.println(n);
@@ -425,29 +435,25 @@ public class MapRepresentation implements Serializable {
 				newnode.setAttribute("ui.class", n.getNodeContent().getLeft().toString());
 				newnode.setAttribute("stench.date", n.getNodeContent().getRight().getLeft());
 				newnode.setAttribute("stench.count", n.getNodeContent().getRight().getRight());
-
 			} else {
 				newnode = this.g.getNode(n.getNodeId());
 				// 3 check its attribute. If it is below the one received, update it.
-				if (n.getNodeContent().getLeft().toString() == MapAttribute.stench.toString()
-						|| n.getNodeContent().getLeft().toString() == MapAttribute.closed.toString()) {
-					newnode.setAttribute("ui.class", MapAttribute.closed.toString());
-				}
-
-				// if the date of the stench is more recent, update it and update the count
-				if (((Date) newnode.getAttribute("stench.date")).before(n.getNodeContent().getRight().getLeft())) {
-					newnode.setAttribute("stench.date", n.getNodeContent().getRight().getLeft());
-					newnode.setAttribute("stench.count", n.getNodeContent().getRight().getRight());
-
-					// Update the status if the count is different from zero
-					if ((Integer) newnode.getAttribute("stench.count") != 0) {
-						if (newnode.getAttribute("ui.class") == MapAttribute.open.toString()) {
-							newnode.setAttribute("ui.class", MapAttribute.openStench.toString());
-						} else if (newnode.getAttribute("ui.class") == MapAttribute.closed.toString()) {
-							newnode.setAttribute("ui.class", MapAttribute.stench.toString());
-						}
-					}
-				}
+                Date nDate = n.getNodeContent().getRight().getLeft();
+                if (((Date) newnode.getAttribute("stench.date")).before(nDate)) {
+                    newnode.setAttribute("stench.date", nDate);
+                    newnode.setAttribute("stench.count", n.getNodeContent().getRight().getRight());
+                }
+                // If the node was closed in the new version
+                if (n.getNodeContent().getLeft().toString() == MapAttribute.closed.toString()) {
+                    newnode.setAttribute("ui.class", MapAttribute.closed.toString());
+                } else if (n.getNodeContent().getLeft().toString() == MapAttribute.stench.toString()) {
+                    newnode.setAttribute("ui.class", MapAttribute.stench.toString());
+                }
+                if (((Integer)newnode.getAttribute("stench.count") != 0) && (newnode.getAttribute("ui.class").toString() == MapAttribute.open.toString())) {
+                    newnode.setAttribute("ui.class", MapAttribute.openStench.toString());
+                } else if (((Integer)newnode.getAttribute("stench.count") == 0) && (newnode.getAttribute("ui.class").toString() == MapAttribute.openStench.toString())) {
+                    newnode.setAttribute("ui.class", MapAttribute.open.toString());
+                }
 			}
 		}
 
@@ -464,7 +470,6 @@ public class MapRepresentation implements Serializable {
 	/**
 	 * If the given map has additional nodes compared to *this* it won't be taken. This only searches for elements that were added on *this*. It is meant to be used to update m
 	 * For example : if it worked on lists : [a,b,c].getDiff([a,b,d]) would return [c]
-	 * TODO renvoyer les nouvelles stench aussi, et ajouter les removed edges
 	 * @param m The smaller map to compare with this
 	 * @return the nodes and edges that were added to the map
 	 */
@@ -479,12 +484,16 @@ public class MapRepresentation implements Serializable {
 			if (m.g.getNode(n.getId()) == null) {
 				diff.addNode(n.getId(), attr, stenchDate, stenchCount);
 			} else { // if a node changed status from open to closed, add it to diff
-				String nAttribute = n.getAttribute("ui.class").toString();
+				String nAttribute = attr.toString();
 				String mAttribute = m.g.getNode(n.getId()).getAttribute("ui.class").toString();
 
 				// Since this function is meant to compare a map with a new version of it, if there is a status change, we keep the version stored in *this*
 				if (!Objects.equals(nAttribute, mAttribute)) {
-					diff.addNode(n.getId(), MapAttribute.valueOf(nAttribute), stenchDate, stenchCount);
+					diff.addNode(n.getId(), attr, stenchDate, stenchCount);
+				}
+				// If the stench count changed, we add it too
+				if ((Integer) m.g.getNode(n.getId()).getAttribute("stench.count") != stenchCount) {
+					diff.addNode(n.getId(), attr, stenchDate, stenchCount);
 				}
 			}
 		}
@@ -536,14 +545,67 @@ public class MapRepresentation implements Serializable {
         return res;
     }
 
-    public List<String> getCloseNodesMaxArity(int maxArity, int maxDistance, String posId) {
+	private int heuristic(int degre, int distance) {
+		return degre * distance;
+	}
+
+    public Map<String, Integer> getCloseNodesMaxArity(int maxArity, int maxDistance, String posId) {
         List<String> possibleNodes = getNodesArityMax(maxArity);
-        List<String> res = new ArrayList<String>();
+        Map<String, Integer> res = new HashMap<String, Integer>();
+        List<String> shortestPath;
         for (String node : possibleNodes) {
-            if (getShortestPath(posId, node).size() <= maxDistance) {
-                res.add(node);
+            shortestPath = getShortestPath(posId, node);
+            if ((shortestPath!=null) && (shortestPath.size() <= maxDistance)) {
+                res.put(node, heuristic(this.g.getNode(node).getDegree(), shortestPath.size()));
             }
         }
         return res;
     }
+
+	/**
+	 * Get the neighbors of a node
+	 * @param node the node to get the neighbors
+	 * @return a list of the neighbors
+	 * **/
+	private List<String> neighborNodes(String node) {
+		Node n = this.g.getNode(node);
+		Stream<Node> nodes = n.neighborNodes();
+		return nodes.map(Node::getId).collect(Collectors.toList());
+	}
+
+	/**
+	 * Get the neighbors of the neighbors of a node
+	 * @param node the node to get the neighbors of the neighbors
+	 * @return a list of the neighbors of the neighbors
+	 */
+	private List<String> neighborNodes2(String node) {
+		Node n = this.g.getNode(node);
+		Set<String> res = new HashSet<>();
+		Stream<Node> nodes = n.neighborNodes();
+		Stream<Stream<Node>> furtherNodes = nodes.map(Node::neighborNodes);
+		furtherNodes.forEach(s -> s.forEach(n2 -> res.add(n2.getId())));
+		return new ArrayList<>(res);
+	}
+
+	/**
+	 * gets the nodes to form a line of hunt
+	 * @param node the node with a golem
+	 * @param dest the node where the golem must be stuck
+	 * @return a list of the nodes to form a line of hunt
+	 */
+	public List<String> neighborLine(String node, String dest) {
+		int len = getShortestPath(node, dest).size();
+		List<String> neighbors = neighborNodes(node);
+		List<String> res = new ArrayList<>();
+		for (String n: neighbors) {
+			if (getShortestPath(n, dest).size() == len + 1) res.add(n);
+		}
+		// Also add the nodes at 2 nodes distance
+		List<String> neighbors2 = neighborNodes2(node);
+		for (String n2 : neighbors2) {
+			if (getShortestPath(n2, dest).size() == len)  res.add(n2);
+		}
+		return res;
+	}
+
 }
