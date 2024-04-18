@@ -67,7 +67,7 @@ public class TeamBuildingState extends OneShotBehaviour {
 			String destination = info[1];
 
 			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received inform from "+msgReceived.getSender().getLocalName() + " : " + location + " destination : " + destination);
-			myAgent.updateAgentPosition(sender, location);
+			myAgent.updateAgentPosition(sender, location, destination);
 			String myDestination = myMap.getLastNodePlan() != null ? myMap.getLastNodePlan() : myAgent.getCurrentPosition().getLocationId();
 			List<String> shortestPath = myMap.getShortestPath(myDestination, destination);
 			if ((shortestPath != null) && (shortestPath.size() < MaxTeamDistance)) {

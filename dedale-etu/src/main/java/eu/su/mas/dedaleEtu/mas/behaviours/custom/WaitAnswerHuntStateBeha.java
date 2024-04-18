@@ -25,8 +25,6 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 	private List<String> listReceiver;
 	private ExploreCoopAgentFSM myAgent;
 	private List<String> team = new ArrayList<String>();
-	private MapRepresentation myMap;
-
 	boolean end = false;
 
 	public WaitAnswerHuntStateBeha(final AbstractDedaleAgent myagent) {
@@ -36,6 +34,43 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+		/*--------------------------answer diagnostics ------------------------------------*/
+		MessageTemplate diagTemplate = MessageTemplate.and(
+				MessageTemplate.MatchProtocol("DIAGNOSTIC"),
+				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
+
+		ACLMessage diagReceived = this.myAgent.receive(diagTemplate);
+		while (diagReceived != null) {
+			System.out.println(this.myAgent.getLocalName()+ "-- received diagnostic from "+diagReceived.getSender().getLocalName());
+			String pos = diagReceived.getContent();
+			if (pos.compareTo(((AbstractDedaleAgent)this.myAgent).getCurrentPosition().getLocationId()) == 0) {
+				ACLMessage diagAnswer = new ACLMessage(ACLMessage.CONFIRM);
+				diagAnswer.setSender(this.myAgent.getAID());
+				diagAnswer.setContent(pos);
+				diagAnswer.addReceiver(diagReceived.getSender());
+				diagAnswer.setProtocol("DIAGNOSTIC");
+				((AbstractDedaleAgent)this.myAgent).sendMessage(diagAnswer);
+			}
+			diagReceived = this.myAgent.receive(diagTemplate);
+		}
+		/*-------------------store golemPos-----------------------*/
+		MessageTemplate golemFound = MessageTemplate.and(
+				MessageTemplate.MatchProtocol("GOLEM"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+
+		ACLMessage golemReceived = this.myAgent.receive(golemFound);
+		while (golemReceived != null) {
+			System.out.println(this.myAgent.getLocalName()+ "-- received golem from "+golemReceived.getSender().getLocalName());
+			String golemPos = golemReceived.getContent().split(";")[0];
+			Date date = new Date(Long.parseLong(golemReceived.getContent().split(";")[1]));
+			if ((myAgent.getGolemDate() == null) || (myAgent.getGolemDate().before(date))) {
+				myAgent.setGolemPos(golemPos, date);
+				myAgent.setLine(null);
+				myAgent.setNextLine(null);
+			}
+			golemReceived = this.myAgent.receive(golemFound);
+		}
+
 		end = false;
 		Date expiration = myAgent.getExpiration();
 
@@ -86,6 +121,12 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 		updateTeam.setProtocol("TEAM");
 		updateTeam.setSender(this.myAgent.getAID());
 
+		String destination = null;
+		for (String agent : myAgent.getTeam() ){
+			destination = (myAgent.getAgentDestination(agent) != null) ? myAgent.getAgentDestination(agent) :
+			myAgent.getMyMap().getLastNodePlan();
+		}
+
 		boolean update = false; // If there is no offer, we won't send an update to our team members
 
 //		System.out.println("Agent " +this.myAgent.getLocalName() + "-- is looking for offer");
@@ -102,6 +143,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 			while (m.find()) {
 				String agent = m.group();
 				if (!team.contains(agent)) {
+					if (myAgent.getAgentDestination(agent) == null) myAgent.updateAgentPosition(agent,null, destination);
 					update = true; // We added an agent to our team
 					myAgent.addTeamMember(agent);
 					team = myAgent.getTeam();
@@ -154,7 +196,12 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 			return 1;
 		}
 		if (end) {
-			if (team.size() > 1) return 3;
+			if (team.size() > 1) {
+                if (myAgent.getChefName().compareTo(myAgent.getLocalName()) != 0)
+					return 3;
+                else
+					return 4;
+            }
 			return 2;
 		}
 		return 0;

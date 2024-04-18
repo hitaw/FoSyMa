@@ -10,7 +10,7 @@ import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
 import jade.core.AID;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.lang.acl.ACLMessage;
-import jade.lang.acl.MessageTemplate;
+import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation.MapAttribute;
 import org.graphstream.graph.Edge;
 
 import java.util.*;
@@ -19,7 +19,7 @@ import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.MaxStuck
 import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
 
 
-public class TeamStrategyState extends OneShotBehaviour {
+public class CaptainStrategyState extends OneShotBehaviour {
 
 	private static final long serialVersionUID = 8567689731496787661L;
 
@@ -27,6 +27,7 @@ public class TeamStrategyState extends OneShotBehaviour {
 	private ExploreCoopAgentFSM myAgent;
 	private List<String> team;
 	private int teamMember = 0;
+	Map<String, Integer> possibleNodes;
 	String objectifGolem = null;
 	String posGolem;
 	int iteration = 0;
@@ -36,15 +37,10 @@ public class TeamStrategyState extends OneShotBehaviour {
  *
  * @param myagent reference to the agent we are adding this behavior to
  */
-	public TeamStrategyState(final AbstractDedaleAgent myagent) {
+	public CaptainStrategyState(final AbstractDedaleAgent myagent) {
 		super(myagent);
 		myAgent = (ExploreCoopAgentFSM) myagent;
 		team = myAgent.getTeam();
-		for (String agent : team ) {
-			if (myAgent.getLocalName().compareToIgnoreCase(agent) > 0) {
-				teamMember++;
-				}
-		}
 	}
 
 	private void calculatePlan() {
@@ -54,42 +50,40 @@ public class TeamStrategyState extends OneShotBehaviour {
 
 		// Find out if the agent is the chief and if not, their rank in the team
 		teamMember = 0;
-		for (String agent : team ) {
-			if (myAgent.getLocalName().compareToIgnoreCase(agent) > 0) {
-				teamMember++;
-			}
+
+		// The golem is considered to be at the stinkiest node if we don't have a position
+		posGolem = myAgent.getGolemPos() == null ? myMap.getStinkiestNode() : myAgent.getGolemPos();
+		// calcul des noeuds proches sur lesquels on a assez d'agents pour bloquer
+		myAgent.addAllEdges(); // We need to add all edges to make sure the arity of nodes is not broken
+		myAgent.clearRemovedEdges();
+		possibleNodes = myMap.getCloseNodesMaxArity(team.size(), ExploreCoopAgentFSM.MaxDistanceGolem, posGolem);
+		// Décide de la stratégie
+		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+		msg.setSender(this.myAgent.getAID());
+		msg.setProtocol("PLAN");
+		if (!possibleNodes.isEmpty()) {
+			// Hypothèse : le golem est sur le noeud posGolem
+			// On choisit le noeud qui nous intéresse pour bloquer le golem et on fait un ligne derrière lui
+			objectifGolem = choiceNode();
+			line = myMap.neighborLine(posGolem, objectifGolem);
+			List<String> golemPath = myMap.getShortestPath(posGolem, objectifGolem); // Hope is sweet
+			String nextGolemStep = golemPath.isEmpty() ? posGolem : golemPath.get(0);
+			nextLine = myMap.neighborLine(nextGolemStep, objectifGolem);
+			msg.setContent(this.iteration + ":"+ line.toString() +";" + ++this.iteration + ":" + nextLine.toString()+ ";" + objectifGolem);
+			myAgent.setLine(line);
+			myAgent.setNextLine(nextLine);
 		}
+		else { // There is no interesting nodes for our team, we need more agents
+			msg.setContent("null");
+		}
+		for (String agentName : team) {
+			if (agentName == this.myAgent.getLocalName()) continue;
+			msg.addReceiver(new AID(agentName, AID.ISLOCALNAME));
+		}
+		((AbstractDedaleAgent)this.myAgent).sendMessage(msg);
 
-        MessageTemplate msgTemplate = MessageTemplate.and(
-                MessageTemplate.MatchProtocol("PLAN"),
-                MessageTemplate.MatchPerformative(ACLMessage.INFORM));
-
-        ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
-        while (msgReceived != null) {
-            String content = msgReceived.getContent();
-            System.out.println(this.myAgent.getLocalName() + "-- received plan from " + msgReceived.getSender().getLocalName());
-            if (content.equals("null")) {
-                // We need more agents
-                // TODO Gathering more agents
-                // Don't move ? Or follow Golem, idk
-                System.out.println("Plan empty, need more agents");
-            }
-            else{
-                String[] info = content.split(";");
-                int it = Integer.parseInt(info[0].split(":")[0]);
-                if (it >= this.iteration) { // We might receive messages that are outdated, we check with the iteration number
-                    this.iteration = it;
-                    line = parseList(info[0].split(":")[1]);
-                    nextLine = parseList(info[1].split(":")[1]);
-                    objectifGolem = info[2];
-                    System.out.println(this.myAgent.getLocalName() + "-- received plan -- " + line + " -- " + nextLine);
-                    myAgent.setLine(line);
-                    myAgent.setNextLine(nextLine);
-                }
-            }
-            msgReceived = this.myAgent.receive(msgTemplate);
-            }
-
+		System.out.println("Chef " + this.myAgent.getLocalName()+ "-- possible nodes -- " + possibleNodes + "-- chosen node : " + objectifGolem);
+		System.out.println("Chef " + this.myAgent.getLocalName()+ "--- line : " + msg.getContent());
 	}
 
 	private List<String> parseList(String list){
@@ -98,27 +92,40 @@ public class TeamStrategyState extends OneShotBehaviour {
 	}
 
 	private void updatePlan() {
-        // receive the instructions for the next step
-        MessageTemplate msgTemplate = MessageTemplate.and(
-                MessageTemplate.MatchProtocol("PLAN"),
-                MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+		// calculate the next line for the team
+		myAgent.addAllEdges();
+		myAgent.clearRemovedEdges();
+		List<String> golemPath = myMap.getShortestPath(posGolem, objectifGolem); // Hope is sweet
+		posGolem = golemPath.isEmpty() ? posGolem : golemPath.get(0);
+		if (!golemPath.isEmpty()) golemPath.remove(0);
+		String nextPosGolem = golemPath.isEmpty() ? posGolem : golemPath.get(0);
+		myAgent.setNextLine(myMap.neighborLine(nextPosGolem, objectifGolem));
 
-        ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
-        while (msgReceived != null) {
-            String content = msgReceived.getContent();
-            System.out.println(this.myAgent.getLocalName() + "-- received plan from " + msgReceived.getSender().getLocalName());
-            String[] info = content.split(";");
-            int it = Integer.parseInt(info[0].split(":")[0]);
-            if (it >= this.iteration) { // We might receive messages that are outdated, we check with the iteration number
-                this.iteration = it;
-                myAgent.setLine(parseList(info[0].split(":")[1]));
-                myAgent.setNextLine(parseList(info[1].split(":")[1]));
-            }
-            msgReceived = this.myAgent.receive(msgTemplate);
+		// send the new plan to the team
+		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+		msg.setSender(this.myAgent.getAID());
+		msg.setProtocol("PLAN");
+		msg.setContent(this.iteration + ":"+ myAgent.getLine().toString() +";" + ++this.iteration + ":" + myAgent.getNextLine().toString()+ ";" + objectifGolem);
+		for (String agentName : team) {
+			if (agentName == this.myAgent.getLocalName()) continue;
+			msg.addReceiver(new AID(agentName, AID.ISLOCALNAME));
 		}
+		((AbstractDedaleAgent)this.myAgent).sendMessage(msg);
 
 	}
 
+	private String choiceNode() {
+		// chose the node with the smallest heuristic in possible_nodes
+		String node = null;
+		int min = Integer.MAX_VALUE;
+		for (Map.Entry<String, Integer> entry : possibleNodes.entrySet()) {
+			if (entry.getValue() < min) {
+				min = entry.getValue();
+				node = entry.getKey();
+			}
+		}
+		return node;
+	}
 
 	private void calculateItinerary(List<String> line, Location myPosition) {
 		String nextDestination = line.size() > teamMember ? line.get(teamMember) : null;
@@ -135,7 +142,7 @@ public class TeamStrategyState extends OneShotBehaviour {
 	public void action() {
 		this.myMap = myAgent.getMyMap();
 
-		System.out.println(this.myAgent.getLocalName()+" - TeamStrategyState");
+		System.out.println(this.myAgent.getLocalName()+" --- CaptainStrategyState");
 
 		if (this.myMap == null) {
 			this.myMap = new MapRepresentation();
@@ -195,11 +202,7 @@ public class TeamStrategyState extends OneShotBehaviour {
 			if (line == null) {
 				System.out.println(this.myAgent.getLocalName() + " --- Didn't get a destination ");
 				// Go to the captain's last known destination (a way to stay together)
-				String captain = myAgent.getChefName();
-				if (this.myAgent.getLocalName().compareTo(captain) != 0) {
-					String captainDestination = myAgent.getAgentDestination(captain);
-					myMap.setPlannedItinerary(myMap.getShortestPath(myPosition.getLocationId(), captainDestination));
-				}
+
 			}
 			else { // TODO need optimization, no need to calculate for each iteration
 				calculateItinerary(line, myPosition);
@@ -212,13 +215,24 @@ public class TeamStrategyState extends OneShotBehaviour {
 			}
 
 			nextNodeId = myMap.getNextNodePlan() != null ? myMap.getNextNodePlan() : myPosition.getLocationId();
-
+			// If we are not to move and line == nextLine, we are blocking. Let's check that the golem is indeed where we think by going there
+			boolean blocking = false;
+			if (line.equals(myAgent.getNextLine()) && myPosition.getLocationId().equals(nextNodeId)) {
+				nextNodeId = objectifGolem;
+				blocking = true;
+			}
 			if (this.myAgent.moveTo(new gsLocation(nextNodeId))) { // Si ça marche pas on a rencontré le golem ?
 				myMap.advancePlan();
 				myAgent.setStuck(0);
 				if (myMap.getNextNodePlan() == null) { // We are at our next destination
 					myAgent.setLine(myAgent.getNextLine());
 					myAgent.setNextLine(null);
+					if (blocking == true) {
+						myAgent.removeGolemPos();
+						myMap.addNode(objectifGolem, MapAttribute.closed, false);
+						myAgent.setLine(null);
+						myAgent.setNextLine(null);
+					}
 				}
 			} else {
 				myAgent.setStuck(myAgent.getStuck() + 1); // TODO if stuck !=0 on considère qu'on est face au golem ?

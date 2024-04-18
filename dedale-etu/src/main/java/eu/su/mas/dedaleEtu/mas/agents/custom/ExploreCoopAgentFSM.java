@@ -4,73 +4,64 @@ import java.util.*;
 
 import dataStructures.serializableGraph.SerializableSimpleGraph;
 import dataStructures.tuple.Couple;
+import eu.su.mas.dedale.env.Location;
+import eu.su.mas.dedale.env.Observation;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import eu.su.mas.dedale.mas.agent.behaviours.platformManagment.*;
 
 import eu.su.mas.dedaleEtu.mas.behaviours.custom.*;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
 
+import jade.core.AID;
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.FSMBehaviour;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
 import org.graphstream.graph.Edge;
-
-/**
- * <pre>
- * ExploreCoop agent FSM. 
- * Basic example of how to "collaboratively" explore the map
- *  - It explore the map using a DFS algorithm and blindly tries to share the topology with the agents within reach.
- *  - The shortestPath computation is not optimized
- *  - Agents do not coordinate themselves on the node(s) to visit, thus progressively creating a single file. It's bad.
- *  - You should give him the list of agents'name to send its map to in parameter when creating the agent.
- *   Object [] entityParameters={"Name1","Name2};
- *   ag=createNewDedaleAgent(c, agentName, ExploreCoopAgent.class.getName(), entityParameters);
- *  
- * It stops when all nodes have been visited.
- * 
- * 
- *  </pre>
- *  
- * @author hc
- *
- */
-
 
 public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	private static final long serialVersionUID = -7969469610241668140L;
-	public static final int ExchangeTimeout = 3;
-	public static final int MaxDistanceGolem = 3; //This determines the distance maximum that a team is going to try to move a golem in order to block it.
-	public static final int MaxTeamDistance = 3; // change this to change the distance max for which two agents will consider that they are hunting the same golem
-	public static final int WaitTime = 100;
-	private boolean hunting = false;
-	private MapRepresentation myMap;
-	private List<String> team = new ArrayList<String>();
-	
-	// State names 
+
+	// State names
 	private static final String A = "SendPing";
 	private static final String B = "WaitAnswer";
 	private static final String C = "Walk";
 	private static final String D = "ReceiveMap";
 	private static final String E = "SendMap";
 	private static final String F = "Gathering";
-	private static final String G = "Diagnostic";
 	private static final String H = "WaitAnswerHunt";
 	private static final String I = "SendPingPosState";
 	private static final String J = "TeamBuilding";
 	private static final String K = "TeamStrategy";
-	public static final int MaxStuck = 2;
+	private static final String L = "CaptainStrategy";
 
-	private List<String> voisins = new ArrayList<String>();
-	private int nbCartesAttendues = 0;
-	private Map<String,Integer> recents = new HashMap<String,Integer>();
-	private Map<String, MapRepresentation> receivedMaps = new HashMap<String, MapRepresentation>();
-	private Map<String, String> agentsPositions = new HashMap<String, String>();
+	// General variables
+	List<String> list_agentNames = new ArrayList<String>();
+	public static final int WaitTime = 100;
+	private MapRepresentation myMap;
 	private Date expiration = new Date();
-
+	private Map<Edge, Integer> edgesRemoved = new HashMap<Edge, Integer>();
+	public static final int MaxStuck = 2;
 	// the number of times the agent tried to go to the same node and failed
 	private int stuck = 0;
-	private Map<Edge, Integer> edgesRemoved = new HashMap<Edge, Integer>();
-	
+	// Exploration variables
+	private List<String> voisins = new ArrayList<String>();
+	private Map<String,Integer> recents = new HashMap<String,Integer>();
+	private Map<String, MapRepresentation> receivedMaps = new HashMap<String, MapRepresentation>();
+	public static final int ExchangeTimeout = 3;
+	private int nbCartesAttendues = 0;
+	// Hunting variables
+	private boolean hunting = false;
+	private List<String> team = new ArrayList<String>();
+	public static final int MaxDistanceGolem = 3; //This determines the distance maximum that a team is going to try to move a golem in order to block it.
+	public static final int MaxTeamDistance = 3; // change this to change the distance max for which two agents will consider that they are hunting the same golem
+	private Map<String, Couple<String,String>> agentsPositions = new HashMap<String, Couple<String, String>>();
+	private List<String> line;
+	private List<String> nextLine;
+	private Couple<String, Date> golemPos = new Couple<>(null, null);
+
+
 	
 	/**
 	 * This method is automatically called when "agent".start() is executed.
@@ -87,7 +78,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		//get the parameters added to the agent at creation (if any)
 		final Object[] args = getArguments();
 		
-		List<String> list_agentNames = new ArrayList<String>();
+
 
 		if(args.length==0){
 			System.err.println("Error while creating the agent, names of agent to contact expected");
@@ -116,11 +107,11 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerState(new ReceiveMapStateBeha(this), D);
 		fsm.registerState(new WalkStateBeha(this), C);
 		fsm.registerState(new GatheringStateBeha(this, list_agentNames.size()), F);
-		fsm.registerState(new DiagnoticStateBeha(this, list_agentNames), G);
 		fsm.registerState(new WaitAnswerHuntStateBeha(this), H);
 		fsm.registerState(new SendPingPosState(this, list_agentNames), I);
 		fsm.registerState(new TeamBuildingState(this), J);
 		fsm.registerState(new TeamStrategyState(this), K);
+		fsm.registerState(new CaptainStrategyState(this), L);
 		
 		// Register the transitions
 		fsm.registerDefaultTransition(A, B);
@@ -135,12 +126,14 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerTransition(F,H, 1);
 		fsm.registerTransition(F,I,0);
 		fsm.registerDefaultTransition(I,J);
-		fsm.registerTransition(H,H,0);
+		fsm.registerTransition(H, H,0);
 		fsm.registerTransition(H, E,1);
 		fsm.registerTransition(H, F,2);
 		fsm.registerTransition(J, H, 1);
 		fsm.registerTransition(J, J, 0);
 		fsm.registerTransition(H, K, 3);
+		fsm.registerTransition(H, L,4);
+		fsm.registerDefaultTransition(L, I);
 		fsm.registerDefaultTransition(K,I);
 
 
@@ -301,9 +294,17 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
         receivedMaps.put(agentName, m);
     }
 
-	public void updateAgentPosition(String agent, String locationId) {
-		agentsPositions.put(agent, locationId);
+	public void updateAgentPosition(String agent, String locationId, String destinationId) {
+		if (locationId == null) {
+			locationId = agentsPositions.containsKey(agent) ? agentsPositions.get(agent).getLeft() : null;
+		}
+		if (destinationId == null) {
+			destinationId = agentsPositions.containsKey(agent) ? agentsPositions.get(agent).getRight() : null;
+		}
+		agentsPositions.put(agent, new Couple<>(locationId, destinationId));
 	}
+	public String getAgentPosition(String agent){ return agentsPositions.get(agent) != null ? agentsPositions.get(agent).getLeft(): null;}
+	public String getAgentDestination(String agent) {return agentsPositions.get(agent) != null ? agentsPositions.get(agent).getRight(): null;}
 
 	public boolean isHunting() {
 		return hunting;
@@ -329,4 +330,115 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	public boolean removeTeamMember(String agent) {
 		return team.remove(agent);
 	}
+	public String getChefName() {
+		String chef = team.get(0);
+		for (String agent : team) {
+			if (agent.compareToIgnoreCase(chef) < 0) {
+				chef = agent;
+			}
+		}
+		return chef;
+	}
+
+	public List<String> getLine() {
+		return line;
+	}
+
+	public void setLine(List<String> line) {
+		this.line = line;
+	}
+
+	public List<String> getNextLine() {
+		return nextLine;
+	}
+
+	public void setNextLine(List<String> nextLine) {
+		this.nextLine = nextLine;
+	}
+	public void setGolemPos(String pos, Date date) {this.golemPos = new Couple<>(pos, date);}
+	public String getGolemPos() {
+		return golemPos.getLeft();
+	}
+	public Date getGolemDate() {
+		return golemPos.getRight();
+	}
+	public void removeGolemPos() {this.golemPos = new Couple<>(null, null);}
+
+	/**
+	 * a diagnostic funtion to be called when moveTo fails
+	 * Warning, if called on an empty stinky node, will return true
+	 * @return true if there is a golem in front of the agent, false if it is an agent
+	 */
+	public boolean diagnostic() {
+		// If we know that there is an agent in front, no need to do anything
+		myMap = this.getMyMap();
+		String golem = myMap.getNextNodePlan();
+		if (this.isAgentOn(golem)) {
+			return false;
+		}
+		// If the node has no stench, it cannot be a golem
+		List<Couple<Location,List<Couple<Observation,Integer>>>> lobs=this.observe();//myPosition
+		boolean stinks = true;
+		Couple<Location, List<Couple<Observation, Integer>>> obs;
+		for (int i = 0; i < lobs.size(); i++) {
+			obs = lobs.get(i);
+			if (obs.getLeft().getLocationId().compareTo(golem) == 0) {
+				stinks = !obs.getRight().isEmpty() && (obs.getRight().get(0).getLeft().toString().equals("Stench"));
+				break;
+			}
+		}
+		if (!stinks) {
+			return false;
+		}
+
+		ACLMessage diag = new ACLMessage(ACLMessage.REQUEST);
+		System.out.println("Agent "+this.getLocalName()+" -- send diag to "+list_agentNames);
+		diag.setSender(this.getAID());
+		diag.setProtocol("DIAGNOSTIC");
+		diag.setContent(golem);
+		for (String agentName : list_agentNames) {
+			if (agentName.compareTo(this.getLocalName())==0) continue;
+			diag.addReceiver(new AID(agentName, AID.ISLOCALNAME));
+		}
+		this.sendMessage(diag);
+
+		Date expiration = new Date(new Date().getTime()+WaitTime*2);
+		MessageTemplate repTemplate = MessageTemplate.and(
+				MessageTemplate.MatchProtocol("DIAGNOSTIC"),
+				MessageTemplate.MatchPerformative(ACLMessage.CONFIRM));
+		boolean isAgent = false;
+
+		ACLMessage rep = this.receive(repTemplate);
+		while ((!isAgent) && (new Date().before(expiration))) { // we set a date after which we decide that we are facing a golem
+			while (rep != null) {
+				String content = rep.getContent();
+				String sender = rep.getSender().getLocalName();
+				if (content.compareTo(golem) == 0) {
+					isAgent = true;
+					System.out.println(this.getLocalName() + "just stuck on "+ sender);
+					this.updateAgentPosition(sender, content, null);
+					break;
+				}
+				rep = this.receive(repTemplate);
+			}
+		}
+		if (!isAgent) {
+			System.out.println(this.getLocalName() + " -- golem detected at "+golem);
+			Date date = new Date();
+			this.setGolemPos(golem, date);
+			this.setLine(null);
+			this.setNextLine(null);
+			ACLMessage spotted = new ACLMessage(ACLMessage.INFORM);
+			spotted.setSender(this.getAID());
+			spotted.setProtocol("GOLEM");
+			spotted.setContent(golem+ ";"+date.getTime());
+			for (String agent : list_agentNames) {
+				if (agent.compareTo(this.getLocalName()) == 0) continue;
+				spotted.addReceiver(new AID(agent, AID.ISLOCALNAME));
+			}
+			this.sendMessage(spotted);
+		}
+		return !isAgent;
+	}
+
 }

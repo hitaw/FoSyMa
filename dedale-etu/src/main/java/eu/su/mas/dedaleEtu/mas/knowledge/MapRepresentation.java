@@ -497,6 +497,9 @@ public class MapRepresentation implements Serializable {
 				}
 			}
 		}
+		if (diff.g.getNodeCount() == 0) {
+			return null;
+		}
 		// Add every edge known on modified nodes
 		for (Node n : diff.g) {
 			for (String s : this.getSerializableGraph().getEdges(n.getId())) {
@@ -509,9 +512,6 @@ public class MapRepresentation implements Serializable {
 				}
 				diff.addEdge(n.getId(), s);
 			}
-		}
-		if (diff.g.getNodeCount() == 0) {
-			return null;
 		}
 		return diff.getSerializableGraph();
 	}
