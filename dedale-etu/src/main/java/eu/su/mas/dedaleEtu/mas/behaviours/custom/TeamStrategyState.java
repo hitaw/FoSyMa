@@ -67,7 +67,7 @@ public class TeamStrategyState extends OneShotBehaviour {
         ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
         while (msgReceived != null) {
             String content = msgReceived.getContent();
-            System.out.println(this.myAgent.getLocalName() + "-- received plan from " + msgReceived.getSender().getLocalName());
+//            System.out.println(this.myAgent.getLocalName() + "-- received plan from " + msgReceived.getSender().getLocalName());
             if (content.equals("null")) {
                 // We need more agents
                 // TODO Gathering more agents
@@ -106,14 +106,16 @@ public class TeamStrategyState extends OneShotBehaviour {
         ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
         while (msgReceived != null) {
             String content = msgReceived.getContent();
-            System.out.println(this.myAgent.getLocalName() + "-- received plan from " + msgReceived.getSender().getLocalName());
+//            System.out.println(this.myAgent.getLocalName() + "-- received plan from " + msgReceived.getSender().getLocalName());
             String[] info = content.split(";");
             int it = Integer.parseInt(info[0].split(":")[0]);
             if (it >= this.iteration) { // We might receive messages that are outdated, we check with the iteration number
                 this.iteration = it;
                 myAgent.setLine(parseList(info[0].split(":")[1]));
                 myAgent.setNextLine(parseList(info[1].split(":")[1]));
-            }
+				System.out.println(this.myAgent.getLocalName() + "-- received plan -- " + myAgent.getLine() + " -- " + myAgent.getNextLine());
+
+			}
             msgReceived = this.myAgent.receive(msgTemplate);
 		}
 
@@ -126,7 +128,7 @@ public class TeamStrategyState extends OneShotBehaviour {
 			List<String> path = myMap.getShortestPath(myPosition.getLocationId(), nextDestination);
 			if ((path != null) && (!path.isEmpty())) {
 				myMap.setPlannedItinerary(path);
-				System.out.println("Agent " + this.myAgent.getLocalName() + "--- path : " + path);
+				System.out.println("Agent " + this.myAgent.getLocalName() + "--- path to line: " + path + "it = " +iteration);
 			}
 		}
 	}
@@ -222,7 +224,7 @@ public class TeamStrategyState extends OneShotBehaviour {
 				}
 			} else {
 				myAgent.setStuck(myAgent.getStuck() + 1); // TODO if stuck !=0 on considère qu'on est face au golem ?
-				boolean golem = myAgent.diagnostic();
+				boolean golem = myAgent.diagnostic(nextNodeId);
 			}
 
 		}

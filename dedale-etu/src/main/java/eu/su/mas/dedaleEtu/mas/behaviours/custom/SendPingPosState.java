@@ -37,7 +37,7 @@ public class SendPingPosState extends OneShotBehaviour {
 //		teamSize = myAgent.getTeamSize();
 
 		ACLMessage ping = new ACLMessage(ACLMessage.INFORM);
-		System.out.println("Agent "+this.myAgent.getLocalName()+" -- send position to "+receivers);
+//		System.out.println("Agent "+this.myAgent.getLocalName()+" -- send position to "+receivers);
 		ping.setSender(this.myAgent.getAID());
 		ping.setProtocol("POSITION");
 		String destination = myMap.getLastNodePlan();

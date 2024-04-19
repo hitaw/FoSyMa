@@ -37,7 +37,7 @@ public class TeamBuildingState extends OneShotBehaviour {
 
 		if (expiration.before(new Date())) {
 			System.out.println("Agent "+this.myAgent.getLocalName()+" -- " + team);
-			System.out.println("Agent "+this.myAgent.getLocalName()+" -- team building expiration date reached");
+//			System.out.println("Agent "+this.myAgent.getLocalName()+" -- team building expiration date reached");
 			end = true;
 		}
 

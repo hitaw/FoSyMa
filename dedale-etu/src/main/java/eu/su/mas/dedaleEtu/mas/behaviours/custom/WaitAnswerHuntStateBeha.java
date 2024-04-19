@@ -41,9 +41,9 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 
 		ACLMessage diagReceived = this.myAgent.receive(diagTemplate);
 		while (diagReceived != null) {
-			System.out.println(this.myAgent.getLocalName()+ "-- received diagnostic from "+diagReceived.getSender().getLocalName());
 			String pos = diagReceived.getContent();
 			if (pos.compareTo(((AbstractDedaleAgent)this.myAgent).getCurrentPosition().getLocationId()) == 0) {
+				System.out.println(this.myAgent.getLocalName()+ "-- received diagnostic from "+diagReceived.getSender().getLocalName());
 				ACLMessage diagAnswer = new ACLMessage(ACLMessage.CONFIRM);
 				diagAnswer.setSender(this.myAgent.getAID());
 				diagAnswer.setContent(pos);
@@ -84,7 +84,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
 
 		if (expiration.before(new Date())) {
-			System.out.println("Agent "+this.myAgent.getLocalName()+" -- expiration date reached");
+//			System.out.println("Agent "+this.myAgent.getLocalName()+" -- expiration date reached");
 			end = true;
 		}
 

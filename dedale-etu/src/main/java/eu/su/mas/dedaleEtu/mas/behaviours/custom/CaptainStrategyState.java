@@ -133,7 +133,7 @@ public class CaptainStrategyState extends OneShotBehaviour {
 			List<String> path = myMap.getShortestPath(myPosition.getLocationId(), nextDestination);
 			if ((path != null) && (!path.isEmpty())) {
 				myMap.setPlannedItinerary(path);
-				System.out.println("Agent " + this.myAgent.getLocalName() + "--- path : " + path);
+				System.out.println("Agent " + this.myAgent.getLocalName() + "--- path to line: " + path + "it = " +iteration);
 			}
 		}
 	}
@@ -217,7 +217,8 @@ public class CaptainStrategyState extends OneShotBehaviour {
 			nextNodeId = myMap.getNextNodePlan() != null ? myMap.getNextNodePlan() : myPosition.getLocationId();
 			// If we are not to move and line == nextLine, we are blocking. Let's check that the golem is indeed where we think by going there
 			boolean blocking = false;
-			if (line.equals(myAgent.getNextLine()) && myPosition.getLocationId().equals(nextNodeId)) {
+
+            if (line != null && line.equals(myAgent.getNextLine()) && myPosition.getLocationId().equals(nextNodeId)) {
 				nextNodeId = objectifGolem;
 				blocking = true;
 			}
@@ -236,7 +237,7 @@ public class CaptainStrategyState extends OneShotBehaviour {
 				}
 			} else {
 				myAgent.setStuck(myAgent.getStuck() + 1); // TODO if stuck !=0 on considère qu'on est face au golem ?
-				boolean golem = myAgent.diagnostic();
+				boolean golem = myAgent.diagnostic(nextNodeId);
 			}
 
 		}

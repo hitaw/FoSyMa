@@ -38,7 +38,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	// General variables
 	List<String> list_agentNames = new ArrayList<String>();
-	public static final int WaitTime = 100;
+	public static final int WaitTime = 1000;
 	private MapRepresentation myMap;
 	private Date expiration = new Date();
 	private Map<Edge, Integer> edgesRemoved = new HashMap<Edge, Integer>();
@@ -369,10 +369,11 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	 * Warning, if called on an empty stinky node, will return true
 	 * @return true if there is a golem in front of the agent, false if it is an agent
 	 */
-	public boolean diagnostic() {
+	public boolean diagnostic(String nextNodeId) {
 		// If we know that there is an agent in front, no need to do anything
-		myMap = this.getMyMap();
-		String golem = myMap.getNextNodePlan();
+//		myMap = this.getMyMap();
+//		String golem = myMap.getNextNodePlan();
+		String golem = nextNodeId;
 		if (this.isAgentOn(golem)) {
 			return false;
 		}
