@@ -30,7 +30,8 @@ public class CaptainStrategyState extends OneShotBehaviour {
 	Map<String, Integer> possibleNodes;
 	String objectifGolem = null;
 	String posGolem;
-	int iteration = 0;
+	int iteration;
+	boolean teamReady = false;
 
 
 	/**
@@ -41,6 +42,7 @@ public class CaptainStrategyState extends OneShotBehaviour {
 		super(myagent);
 		myAgent = (ExploreCoopAgentFSM) myagent;
 		team = myAgent.getTeam();
+		iteration = myAgent.getIteration();
 	}
 
 	private void calculatePlan() {
@@ -72,6 +74,7 @@ public class CaptainStrategyState extends OneShotBehaviour {
 			msg.setContent(this.iteration + ":"+ line.toString() +";" + ++this.iteration + ":" + nextLine.toString()+ ";" + objectifGolem);
 			myAgent.setLine(line);
 			myAgent.setNextLine(nextLine);
+			myAgent.increaseIteration();
 		}
 		else { // There is no interesting nodes for our team, we need more agents
 			msg.setContent("null");
@@ -95,13 +98,12 @@ public class CaptainStrategyState extends OneShotBehaviour {
 		// calculate the next line for the team
 		myAgent.addAllEdges();
 		myAgent.clearRemovedEdges();
+
 		List<String> golemPath = myMap.getShortestPath(posGolem, objectifGolem); // Hope is sweet
 		posGolem = golemPath.isEmpty() ? posGolem : golemPath.get(0);
 		if (!golemPath.isEmpty()) golemPath.remove(0);
-		String nextPosGolem = golemPath.isEmpty() ? posGolem : golemPath.get(0);
-		myAgent.setNextLine(myMap.neighborLine(nextPosGolem, objectifGolem));
+		myAgent.setNextLine(myMap.neighborLine(posGolem, objectifGolem));
 
-		// send the new plan to the team
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 		msg.setSender(this.myAgent.getAID());
 		msg.setProtocol("PLAN");
@@ -129,6 +131,9 @@ public class CaptainStrategyState extends OneShotBehaviour {
 
 	private void calculateItinerary(List<String> line, Location myPosition) {
 		String nextDestination = line.size() > teamMember ? line.get(teamMember) : null;
+		if (nextDestination == myMap.getLastNodePlan()) {
+			return;
+		}
 		if (nextDestination != null) {
 			List<String> path = myMap.getShortestPath(myPosition.getLocationId(), nextDestination);
 			if ((path != null) && (!path.isEmpty())) {
@@ -140,7 +145,17 @@ public class CaptainStrategyState extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+
+		try {
+			this.myAgent.doWait(WaitTime);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		boolean blocking = false;
+		teamReady = false;
 		this.myMap = myAgent.getMyMap();
+		this.iteration = myAgent.getIteration();
 
 		System.out.println(this.myAgent.getLocalName()+" --- CaptainStrategyState");
 
@@ -191,44 +206,44 @@ public class CaptainStrategyState extends OneShotBehaviour {
 				this.myMap.addNewNode(accessibleNode.getLocationId(), stench); // this also updates the stench date on already existing nodes
 			}
 
-			Date expiration = new Date(new Date().getTime() + WaitTime);
 			List<String> line = myAgent.getLine();
 			// The captain calculate the lines, the others expect a message from the team captain
-			while ((line == null) && (new Date().before(expiration))) {
+			if (line == null) {
 				calculatePlan();
 				line = myAgent.getLine();
 			}
 
-			if (line == null) {
-				System.out.println(this.myAgent.getLocalName() + " --- Didn't get a destination ");
+			if (line == null) { // First iteration or after fail
+				System.out.println(this.myAgent.getLocalName() + " --- No good destination, gather more people ");
 				// Go to the captain's last known destination (a way to stay together)
-
+				nextNodeId = myMap.getNextNodePlan() != null ? myMap.getNextNodePlan() : myPosition.getLocationId();
 			}
-			else { // TODO need optimization, no need to calculate for each iteration
+			else {
 				calculateItinerary(line, myPosition);
-				expiration = new Date(new Date().getTime() + WaitTime);
 
-				while ((myAgent.getNextLine() == null) && (new Date().before(expiration))){ // We are at the line node
+				if (myAgent.getNextLine() == null) {
 					updatePlan();
 					calculateItinerary(myAgent.getLine(), myPosition);
 				}
-			}
 
-			nextNodeId = myMap.getNextNodePlan() != null ? myMap.getNextNodePlan() : myPosition.getLocationId();
-			// If we are not to move and line == nextLine, we are blocking. Let's check that the golem is indeed where we think by going there
-			boolean blocking = false;
+				nextNodeId = myMap.getNextNodePlan() != null ? myMap.getNextNodePlan() : myPosition.getLocationId();
 
-            if (line != null && line.equals(myAgent.getNextLine()) && myPosition.getLocationId().equals(nextNodeId)) {
-				nextNodeId = objectifGolem;
-				blocking = true;
+				// If we are not to move and line == nextLine, we are blocking. Let's check that the golem is indeed where we think by going there
+				if ( myAgent.getLine().equals(myAgent.getNextLine()) && myPosition.getLocationId().equals(nextNodeId)) {
+					nextNodeId = objectifGolem;
+					blocking = true;
+				}
 			}
-			if (this.myAgent.moveTo(new gsLocation(nextNodeId))) { // Si ça marche pas on a rencontré le golem ?
+			if (this.myAgent.moveTo(new gsLocation(nextNodeId))) {
 				myMap.advancePlan();
 				myAgent.setStuck(0);
 				if (myMap.getNextNodePlan() == null) { // We are at our next destination
-					myAgent.setLine(myAgent.getNextLine());
-					myAgent.setNextLine(null);
-					if (blocking == true) {
+					if (myAgent.isReady()) {
+						myAgent.setLine(myAgent.getNextLine());
+						myAgent.setNextLine(null);
+					}
+					if (blocking) {
+						System.out.println("Agent " + this.myAgent.getLocalName() + " --- We are not blocking the golem");
 						myAgent.removeGolemPos();
 						myMap.addNode(objectifGolem, MapAttribute.closed, false);
 						myAgent.setLine(null);
@@ -236,8 +251,11 @@ public class CaptainStrategyState extends OneShotBehaviour {
 					}
 				}
 			} else {
+				if (blocking) {
+					System.out.println("Agent " + this.myAgent.getLocalName() + " --- We are blocking the golem");
+				}
 				myAgent.setStuck(myAgent.getStuck() + 1); // TODO if stuck !=0 on considère qu'on est face au golem ?
-				boolean golem = myAgent.diagnostic(nextNodeId);
+				myAgent.diagnostic(nextNodeId);
 			}
 
 		}

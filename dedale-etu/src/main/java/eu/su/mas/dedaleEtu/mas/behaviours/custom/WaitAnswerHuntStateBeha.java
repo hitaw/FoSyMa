@@ -34,6 +34,13 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+		end = false;
+		Date expiration = myAgent.getExpiration();
+		if (expiration.before(new Date())) {
+//			System.out.println("Agent "+this.myAgent.getLocalName()+" -- expiration date reached");
+			end = true;
+			return;
+		}
 		/*--------------------------answer diagnostics ------------------------------------*/
 		MessageTemplate diagTemplate = MessageTemplate.and(
 				MessageTemplate.MatchProtocol("DIAGNOSTIC"),
@@ -71,9 +78,6 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 			golemReceived = this.myAgent.receive(golemFound);
 		}
 
-		end = false;
-		Date expiration = myAgent.getExpiration();
-
 		/*------------------------- map sharing with the other agents -----------------------------*/
 		// Deal with agents that didn't finish exploration first
 		listReceiver  = new ArrayList<String>();
@@ -83,10 +87,6 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 				MessageTemplate.MatchProtocol("PING"),
 				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
 
-		if (expiration.before(new Date())) {
-//			System.out.println("Agent "+this.myAgent.getLocalName()+" -- expiration date reached");
-			end = true;
-		}
 
 		//check if ping received
 
@@ -168,6 +168,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 				String agent = m.group();
 				if (!team.contains(agent)) {
 					update = true;
+
 					myAgent.addTeamMember(agent);
 					team = myAgent.getTeam();
 				}
@@ -176,6 +177,8 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 		}
 
 		if (update) { // If we added agent(s) to our team, we warn the team, including the agent(s) we just added to warn we accepted their proposal
+			// the team changes, we restart the strategy TODO not optimal
+			myAgent.restartStrategy();
 			for (String agent : team) {
 				System.out.println(this.myAgent.getLocalName()+ "-- add receiver to update team -- " + agent);
 				if (Objects.equals(agent, this.myAgent.getLocalName())) {
@@ -188,6 +191,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 			System.out.println(this.myAgent.getLocalName()+ "-- send update to team -- " + team.toString());
 			((AbstractDedaleAgent)this.myAgent).sendMessage(updateTeam);
 		}
+
 	}
 
 	@Override

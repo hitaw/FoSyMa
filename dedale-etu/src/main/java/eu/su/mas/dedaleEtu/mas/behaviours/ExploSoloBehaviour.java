@@ -15,6 +15,8 @@ import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation.MapAttribute;
 import jade.core.behaviours.SimpleBehaviour;
 
+import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
+
 
 /**
  * This behaviour allows an agent to explore the environment and learn the associated topological map.
@@ -63,7 +65,7 @@ public class ExploSoloBehaviour extends SimpleBehaviour {
 			 * Just added here to let you see what the agent is doing, otherwise he will be too quick
 			 */
 			try {
-				this.myAgent.doWait(500);
+				this.myAgent.doWait(WaitTime);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

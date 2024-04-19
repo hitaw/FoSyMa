@@ -30,6 +30,7 @@ public class TeamStrategyState extends OneShotBehaviour {
 	String objectifGolem = null;
 	String posGolem;
 	int iteration = 0;
+	String nextDestination = null;
 
 
 	/**
@@ -40,25 +41,14 @@ public class TeamStrategyState extends OneShotBehaviour {
 		super(myagent);
 		myAgent = (ExploreCoopAgentFSM) myagent;
 		team = myAgent.getTeam();
-		for (String agent : team ) {
-			if (myAgent.getLocalName().compareToIgnoreCase(agent) > 0) {
-				teamMember++;
-				}
-		}
+		teamMember = team.indexOf(myAgent.getLocalName());
 	}
 
 	private void calculatePlan() {
 		List<String> line;
 		List<String> nextLine;
 		myMap = myAgent.getMyMap();
-
-		// Find out if the agent is the chief and if not, their rank in the team
-		teamMember = 0;
-		for (String agent : team ) {
-			if (myAgent.getLocalName().compareToIgnoreCase(agent) > 0) {
-				teamMember++;
-			}
-		}
+		teamMember = team.indexOf(myAgent.getLocalName());
 
         MessageTemplate msgTemplate = MessageTemplate.and(
                 MessageTemplate.MatchProtocol("PLAN"),
@@ -73,12 +63,14 @@ public class TeamStrategyState extends OneShotBehaviour {
                 // TODO Gathering more agents
                 // Don't move ? Or follow Golem, idk
                 System.out.println("Plan empty, need more agents");
+				myAgent.setLine(new ArrayList<>());
             }
             else{
                 String[] info = content.split(";");
                 int it = Integer.parseInt(info[0].split(":")[0]);
                 if (it >= this.iteration) { // We might receive messages that are outdated, we check with the iteration number
                     this.iteration = it;
+					myAgent.setIteration(it);
                     line = parseList(info[0].split(":")[1]);
                     nextLine = parseList(info[1].split(":")[1]);
                     objectifGolem = info[2];
@@ -110,7 +102,9 @@ public class TeamStrategyState extends OneShotBehaviour {
             String[] info = content.split(";");
             int it = Integer.parseInt(info[0].split(":")[0]);
             if (it >= this.iteration) { // We might receive messages that are outdated, we check with the iteration number
+				myAgent.setGoToNext(true);
                 this.iteration = it;
+				myAgent.setIteration(it);
                 myAgent.setLine(parseList(info[0].split(":")[1]));
                 myAgent.setNextLine(parseList(info[1].split(":")[1]));
 				System.out.println(this.myAgent.getLocalName() + "-- received plan -- " + myAgent.getLine() + " -- " + myAgent.getNextLine());
@@ -123,7 +117,10 @@ public class TeamStrategyState extends OneShotBehaviour {
 
 
 	private void calculateItinerary(List<String> line, Location myPosition) {
-		String nextDestination = line.size() > teamMember ? line.get(teamMember) : null;
+		nextDestination = line.size() > teamMember ? line.get(teamMember) : null;
+		if (myMap.getLastNodePlan()!=null && nextDestination != null && nextDestination.compareTo(myMap.getLastNodePlan()) == 0) {
+			return;
+		}
 		if (nextDestination != null) {
 			List<String> path = myMap.getShortestPath(myPosition.getLocationId(), nextDestination);
 			if ((path != null) && (!path.isEmpty())) {
@@ -135,6 +132,13 @@ public class TeamStrategyState extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+
+		try {
+			this.myAgent.doWait(WaitTime);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
 		this.myMap = myAgent.getMyMap();
 
 		System.out.println(this.myAgent.getLocalName()+" - TeamStrategyState");
@@ -194,16 +198,14 @@ public class TeamStrategyState extends OneShotBehaviour {
 				line = myAgent.getLine();
 			}
 
-			if (line == null) {
+			if (line == null || line.isEmpty()) {
 				System.out.println(this.myAgent.getLocalName() + " --- Didn't get a destination ");
 				// Go to the captain's last known destination (a way to stay together)
 				String captain = myAgent.getChefName();
-				if (this.myAgent.getLocalName().compareTo(captain) != 0) {
-					String captainDestination = myAgent.getAgentDestination(captain);
-					myMap.setPlannedItinerary(myMap.getShortestPath(myPosition.getLocationId(), captainDestination));
-				}
+				String captainDestination = myAgent.getAgentDestination(captain);
+				myMap.setPlannedItinerary(myMap.getShortestPath(myPosition.getLocationId(), captainDestination));
 			}
-			else { // TODO need optimization, no need to calculate for each iteration
+			else {
 				calculateItinerary(line, myPosition);
 				expiration = new Date(new Date().getTime() + WaitTime);
 
@@ -215,16 +217,17 @@ public class TeamStrategyState extends OneShotBehaviour {
 
 			nextNodeId = myMap.getNextNodePlan() != null ? myMap.getNextNodePlan() : myPosition.getLocationId();
 
-			if (this.myAgent.moveTo(new gsLocation(nextNodeId))) { // Si ça marche pas on a rencontré le golem ?
+			if (this.myAgent.moveTo(new gsLocation(nextNodeId))) {
 				myMap.advancePlan();
 				myAgent.setStuck(0);
-				if (myMap.getNextNodePlan() == null) { // We are at our next destination
+				if ((myMap.getNextNodePlan() == null) && myAgent.getGoToNext()) { // We are at our next destination
 					myAgent.setLine(myAgent.getNextLine());
 					myAgent.setNextLine(null);
+					myAgent.setGoToNext(false);
 				}
 			} else {
-				myAgent.setStuck(myAgent.getStuck() + 1); // TODO if stuck !=0 on considère qu'on est face au golem ?
-				boolean golem = myAgent.diagnostic(nextNodeId);
+				myAgent.setStuck(myAgent.getStuck() + 1);
+				myAgent.diagnostic(nextNodeId);
 			}
 
 		}

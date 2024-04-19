@@ -16,6 +16,7 @@ import jade.core.behaviours.OneShotBehaviour;
 import org.graphstream.graph.Edge;
 
 import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.MaxStuck;
+import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
 
 public class WalkStateBeha extends OneShotBehaviour {	
 
@@ -68,7 +69,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 			 * Just added here to let you see what the agent is doing, otherwise he will be too quick
 			 */
 			try {
-				this.myAgent.doWait(500);
+				this.myAgent.doWait(WaitTime);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

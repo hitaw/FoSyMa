@@ -77,8 +77,10 @@ public class TeamBuildingState extends OneShotBehaviour {
 					System.out.println("Agent "+this.myAgent.getLocalName()+" -- send join to "+sender);
 					// If we are joining a team, we go to the same destination to keep together
 					// only change if the other agent is to be our chef, otherwise they will change their destination
-					if (sender.compareToIgnoreCase(myAgent.getLocalName()) < 0) myMap.setPlannedItinerary(myMap.getShortestPath(myAgent.getCurrentPosition().getLocationId(), destination));
-					//TODO not sure about this
+					if (sender.compareToIgnoreCase(myAgent.getLocalName()) < 0){
+						myMap.setPlannedItinerary(myMap.getShortestPath(myAgent.getCurrentPosition().getLocationId(), destination));
+						myAgent.restartStrategy();
+					}
 				}
 			}
 			msgReceived = this.myAgent.receive(msgTemplate);

@@ -38,7 +38,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	// General variables
 	List<String> list_agentNames = new ArrayList<String>();
-	public static final int WaitTime = 1000;
+	public static final int WaitTime = 500;
 	private MapRepresentation myMap;
 	private Date expiration = new Date();
 	private Map<Edge, Integer> edgesRemoved = new HashMap<Edge, Integer>();
@@ -60,9 +60,9 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	private List<String> line;
 	private List<String> nextLine;
 	private Couple<String, Date> golemPos = new Couple<>(null, null);
+	private int iteration = 0;
+	private boolean goToNext = false;
 
-
-	
 	/**
 	 * This method is automatically called when "agent".start() is executed.
 	 * Consider that Agent is launched for the first time. 
@@ -135,7 +135,6 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerTransition(H, L,4);
 		fsm.registerDefaultTransition(L, I);
 		fsm.registerDefaultTransition(K,I);
-
 
 		lb.add(fsm);
 		
@@ -315,7 +314,13 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	}
 
 	public boolean isAgentOn(String location) {
-		return agentsPositions.containsValue(location);
+		for (String agent : agentsPositions.keySet()) {
+			String l = agentsPositions.get(agent).getLeft();
+			if (l != null && l.compareTo(location) == 0) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public List<String> getTeam() {
@@ -325,7 +330,9 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		return team.contains(agent);
 	}
 	public boolean addTeamMember(String agent) {
-		return team.add(agent);
+		boolean res = team.add(agent);
+		Collections.sort(team);
+		return res;
 	}
 	public boolean removeTeamMember(String agent) {
 		return team.remove(agent);
@@ -442,4 +449,39 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		return !isAgent;
 	}
 
+	public int getIteration() {
+		return iteration;
+	}
+
+	public void setIteration(int iteration) {
+		this.iteration = iteration;
+	}
+
+	public void increaseIteration() {
+		this.iteration++;
+	}
+
+	public boolean isReady() {
+		System.out.println("Call is team ready ?");
+		for (int i = 1; i < team.size(); i++) { // start at 1 because index 0 is the captain calling is method
+			String agent = team.get(i);
+			if (line.get(i) != null && agentsPositions.get(agent).getLeft().compareTo(line.get(i)) != 0) return false;
+		}
+		System.out.println("Team Ready");
+		return true;
+	}
+
+	public boolean getGoToNext() {
+		return goToNext;
+	}
+
+	public void setGoToNext(boolean goToNext) {
+		this.goToNext = goToNext;
+	}
+
+	public void restartStrategy() {
+		setLine(null);
+		setNextLine(null);
+		setGoToNext(false);
+	}
 }
