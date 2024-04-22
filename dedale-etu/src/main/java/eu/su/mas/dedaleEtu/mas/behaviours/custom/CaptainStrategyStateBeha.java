@@ -19,7 +19,7 @@ import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.MaxStuck
 import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
 
 
-public class CaptainStrategyState extends OneShotBehaviour {
+public class CaptainStrategyStateBeha extends OneShotBehaviour {
 
 	private static final long serialVersionUID = 8567689731496787661L;
 
@@ -32,13 +32,14 @@ public class CaptainStrategyState extends OneShotBehaviour {
 	String posGolem;
 	int iteration;
 	boolean teamReady = false;
+	boolean freeze = false;
 
 
 	/**
  *
  * @param myagent reference to the agent we are adding this behavior to
  */
-	public CaptainStrategyState(final AbstractDedaleAgent myagent) {
+	public CaptainStrategyStateBeha(final AbstractDedaleAgent myagent) {
 		super(myagent);
 		myAgent = (ExploreCoopAgentFSM) myagent;
 		team = myAgent.getTeam();
@@ -50,11 +51,11 @@ public class CaptainStrategyState extends OneShotBehaviour {
 		List<String> nextLine;
 		myMap = myAgent.getMyMap();
 
-		// Find out if the agent is the chief and if not, their rank in the team
-		teamMember = 0;
-
 		// The golem is considered to be at the stinkiest node if we don't have a position
 		posGolem = myAgent.getGolemPos() == null ? myMap.getStinkiestNode() : myAgent.getGolemPos();
+		if (posGolem == null) { // no stench detected, select a random node
+			posGolem = myMap.getRandomNode();
+		}
 		// calcul des noeuds proches sur lesquels on a assez d'agents pour bloquer
 		myAgent.addAllEdges(); // We need to add all edges to make sure the arity of nodes is not broken
 		myAgent.clearRemovedEdges();
@@ -71,6 +72,21 @@ public class CaptainStrategyState extends OneShotBehaviour {
 			List<String> golemPath = myMap.getShortestPath(posGolem, objectifGolem); // Hope is sweet
 			String nextGolemStep = golemPath.isEmpty() ? posGolem : golemPath.get(0);
 			nextLine = myMap.neighborLine(nextGolemStep, objectifGolem);
+			// traitement de la ligne pour mettre les noeuds au bon endroit pour les agents TODO TODO TODO TODO
+//			Map<Integer, String> IntermediaireNextLine = new HashMap<>();
+//			for (int i = 0; i < team.size(); i++) {
+//				String node = line.get(i);
+//				for (int j = 0; j < nextLine.size(); j++) {
+//					String node2 = nextLine.get(j);
+//					if (myMap.isNeighbor(node, node2)) {
+//						IntermediaireNextLine.put(i, node2);
+//						nextLine.remove(j);
+//						break;
+//					}
+//				}
+//			}
+
+
 			msg.setContent(this.iteration + ":"+ line.toString() +";" + ++this.iteration + ":" + nextLine.toString()+ ";" + objectifGolem);
 			myAgent.setLine(line);
 			myAgent.setNextLine(nextLine);
@@ -228,8 +244,8 @@ public class CaptainStrategyState extends OneShotBehaviour {
 
 				nextNodeId = myMap.getNextNodePlan() != null ? myMap.getNextNodePlan() : myPosition.getLocationId();
 
-				// If we are not to move and line == nextLine, we are blocking. Let's check that the golem is indeed where we think by going there
-				if ( myAgent.getLine().equals(myAgent.getNextLine()) && myPosition.getLocationId().equals(nextNodeId)) {
+				// If we are on the line and line == nextLine, we are blocking. Let's check that the golem is indeed where we think by going there
+				if ( myAgent.getLine().equals(myAgent.getNextLine()) && myPosition.getLocationId().equals(line.get(0))) {
 					nextNodeId = objectifGolem;
 					blocking = true;
 				}
@@ -253,6 +269,27 @@ public class CaptainStrategyState extends OneShotBehaviour {
 			} else {
 				if (blocking) {
 					System.out.println("Agent " + this.myAgent.getLocalName() + " --- We are blocking the golem");
+					if (myAgent.isReady()) {
+						// tell the useful agents to freeze
+						ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+						msg.setSender(this.myAgent.getAID());
+						msg.setProtocol("FREEZE");
+						for (int i = 0; i < line.size(); i++) { // line forcément plus petit que le nb d'agents de la team par définition du blocage
+							msg.addReceiver(new AID(team.get(i), AID.ISLOCALNAME));
+							System.out.println("Send freeze to " + team.get(i));
+						}
+						((AbstractDedaleAgent)this.myAgent).sendMessage(msg);
+
+						// warn useless agents that they are free to go hunt other golems
+						ACLMessage msgFree = new ACLMessage(ACLMessage.INFORM);
+						msgFree.setSender(this.myAgent.getAID());
+						msgFree.setProtocol("FREE");
+						for (int i = line.size(); i < team.size(); i ++) {
+							msgFree.addReceiver(new AID(team.get(i), AID.ISLOCALNAME));
+						}
+						((AbstractDedaleAgent)this.myAgent).sendMessage(msgFree);
+						freeze = true;
+					}
 				}
 				myAgent.setStuck(myAgent.getStuck() + 1); // TODO if stuck !=0 on considère qu'on est face au golem ?
 				myAgent.diagnostic(nextNodeId);
@@ -263,6 +300,7 @@ public class CaptainStrategyState extends OneShotBehaviour {
 	}
 	@Override
 	public int onEnd() {
+		if (freeze) return 1;
 		return 0;
 	}
 }

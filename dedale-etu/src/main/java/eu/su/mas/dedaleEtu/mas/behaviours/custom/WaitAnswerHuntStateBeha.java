@@ -15,7 +15,7 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.MaxTeamDistance;
+import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
 
 
 public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
@@ -24,8 +24,10 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 
 	private List<String> listReceiver;
 	private ExploreCoopAgentFSM myAgent;
+	private MapRepresentation myMap;
 	private List<String> team = new ArrayList<String>();
 	boolean end = false;
+	boolean freeze = false;
 
 	public WaitAnswerHuntStateBeha(final AbstractDedaleAgent myagent) {
 		super(myagent);
@@ -34,6 +36,8 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+		myMap = myAgent.getMyMap();
+
 		end = false;
 		Date expiration = myAgent.getExpiration();
 		if (expiration.before(new Date())) {
@@ -122,10 +126,6 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 		updateTeam.setSender(this.myAgent.getAID());
 
 		String destination = null;
-		for (String agent : myAgent.getTeam() ){
-			destination = (myAgent.getAgentDestination(agent) != null) ? myAgent.getAgentDestination(agent) :
-			myAgent.getMyMap().getLastNodePlan();
-		}
 
 		boolean update = false; // If there is no offer, we won't send an update to our team members
 
@@ -134,6 +134,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 		while (offerReceived != null) {
 			String sender = offerReceived.getSender().getLocalName();
 			String content = offerReceived.getContent();
+			destination = myAgent.getAgentDestination(sender);
 
 			System.out.println(this.myAgent.getLocalName()+ "-- received offer from "+sender);
 			team = myAgent.getTeam();
@@ -143,7 +144,14 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 			while (m.find()) {
 				String agent = m.group();
 				if (!team.contains(agent)) {
+					// we consider that a new agent from a team, is going in the same direction as the sender
 					if (myAgent.getAgentDestination(agent) == null) myAgent.updateAgentPosition(agent,null, destination);
+					// If we are joining a team, we go to the same destination to keep together
+					// only change if the other agent is to be our chef, otherwise they will change their destination
+					if (agent.compareToIgnoreCase(myAgent.getChefName()) < 0 && destination != null){
+						myMap.setPlannedItinerary(myMap.getShortestPath(myAgent.getCurrentPosition().getLocationId(), destination));
+						myAgent.restartStrategy();
+					}
 					update = true; // We added an agent to our team
 					myAgent.addTeamMember(agent);
 					team = myAgent.getTeam();
@@ -159,16 +167,25 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 		ACLMessage updateReceived = this.myAgent.receive(updateTemplate);
 		while (updateReceived != null) {
 			String content = updateReceived.getContent();
+			String teamStr = content.split(";")[0];
 			System.out.println(this.myAgent.getLocalName()+ "-- received update from "+updateReceived.getSender().getLocalName());
 			team = myAgent.getTeam();
 			// We parse the string received (a list.toString) to extract the agents in the team
-			m = p.matcher(content);
+			m = p.matcher(teamStr);
 			// This should at least contain the sender's name
 			while (m.find()) {
 				String agent = m.group();
 				if (!team.contains(agent)) {
 					update = true;
-
+					if (myAgent.getAgentDestination(agent) == null) {
+						destination = content.split(";")[1];
+						myAgent.updateAgentPosition(agent,null, destination);
+					}
+					// If we are joining a team, we go to the same destination to keep together
+					// only change if the other agent is to be our chef, otherwise they will change their destination
+					if (agent.compareToIgnoreCase(myAgent.getChefName()) < 0){
+						myMap.setPlannedItinerary(myMap.getShortestPath(myAgent.getCurrentPosition().getLocationId(), destination));
+					}
 					myAgent.addTeamMember(agent);
 					team = myAgent.getTeam();
 				}
@@ -177,7 +194,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 		}
 
 		if (update) { // If we added agent(s) to our team, we warn the team, including the agent(s) we just added to warn we accepted their proposal
-			// the team changes, we restart the strategy TODO not optimal
+			// the team changes, we restart the strategy TODO not great
 			myAgent.restartStrategy();
 			for (String agent : team) {
 				System.out.println(this.myAgent.getLocalName()+ "-- add receiver to update team -- " + agent);
@@ -187,17 +204,57 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 				}
 				updateTeam.addReceiver(new AID(agent,AID.ISLOCALNAME));
 			}
-			updateTeam.setContent(team.toString());
+			updateTeam.setContent(team.toString() + ";" + (myAgent.getAgentDestination(myAgent.getChefName()) ==null ? myAgent.getCurrentPosition().getLocationId() : myAgent.getAgentDestination(myAgent.getChefName())));
 			System.out.println(this.myAgent.getLocalName()+ "-- send update to team -- " + team.toString());
 			((AbstractDedaleAgent)this.myAgent).sendMessage(updateTeam);
 		}
 
+		/*--------------hunt done----------------*/
+		MessageTemplate freezeTemplate = MessageTemplate.and(
+				MessageTemplate.MatchProtocol("FREEZE"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+		ACLMessage freezeReceived = this.myAgent.receive(freezeTemplate);
+		if (freezeReceived != null) {
+			System.out.println(this.myAgent.getLocalName()+ "-- received freeze from "+freezeReceived.getSender().getLocalName());
+			freeze = true;
+			return;
+		}
+
+		/*---------------change teams------------------*/
+
+		MessageTemplate freeTemplate = MessageTemplate.and(
+				MessageTemplate.MatchProtocol("FREE"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+
+		ACLMessage freeReceived = this.myAgent.receive(freeTemplate);
+		if (freeReceived != null) {
+			System.out.println(this.myAgent.getLocalName()+ "-- received free from "+freezeReceived.getSender().getLocalName());
+
+			myAgent.resetTeam();
+			myAgent.restartStrategy();
+			myAgent.setGolemPos(null, null);
+			return;
+		}
+
+
+
+		// won't spam
+		try {
+			this.myAgent.doWait(WaitTime /10);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		myAgent.setMyMap(myMap);
 	}
 
 	@Override
 	public int onEnd() {
 		if (!listReceiver.isEmpty()) {
 			return 1;
+		}
+		if (freeze) {
+			return 5;
 		}
 		if (end) {
 			if (team.size() > 1) {

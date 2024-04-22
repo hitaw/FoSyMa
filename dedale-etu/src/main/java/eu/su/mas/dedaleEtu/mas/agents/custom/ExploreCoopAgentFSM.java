@@ -35,10 +35,11 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	private static final String J = "TeamBuilding";
 	private static final String K = "TeamStrategy";
 	private static final String L = "CaptainStrategy";
+	private static final String M = "Frozen";
 
 	// General variables
 	List<String> list_agentNames = new ArrayList<String>();
-	public static final int WaitTime = 500;
+	public static final int WaitTime = 100;
 	private MapRepresentation myMap;
 	private Date expiration = new Date();
 	private Map<Edge, Integer> edgesRemoved = new HashMap<Edge, Integer>();
@@ -55,7 +56,6 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	private boolean hunting = false;
 	private List<String> team = new ArrayList<String>();
 	public static final int MaxDistanceGolem = 3; //This determines the distance maximum that a team is going to try to move a golem in order to block it.
-	public static final int MaxTeamDistance = 3; // change this to change the distance max for which two agents will consider that they are hunting the same golem
 	private Map<String, Couple<String,String>> agentsPositions = new HashMap<String, Couple<String, String>>();
 	private List<String> line;
 	private List<String> nextLine;
@@ -108,10 +108,11 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerState(new WalkStateBeha(this), C);
 		fsm.registerState(new GatheringStateBeha(this, list_agentNames.size()), F);
 		fsm.registerState(new WaitAnswerHuntStateBeha(this), H);
-		fsm.registerState(new SendPingPosState(this, list_agentNames), I);
-		fsm.registerState(new TeamBuildingState(this), J);
-		fsm.registerState(new TeamStrategyState(this), K);
-		fsm.registerState(new CaptainStrategyState(this), L);
+		fsm.registerState(new SendPingPosStateBeha(this, list_agentNames), I);
+		fsm.registerState(new TeamBuildingStateBeha(this), J);
+		fsm.registerState(new TeamStrategyStateBeha(this), K);
+		fsm.registerState(new CaptainStrategyStateBeha(this), L);
+		fsm.registerState(new FrozenStateBeha(this), M);
 		
 		// Register the transitions
 		fsm.registerDefaultTransition(A, B);
@@ -133,8 +134,11 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerTransition(J, J, 0);
 		fsm.registerTransition(H, K, 3);
 		fsm.registerTransition(H, L,4);
-		fsm.registerDefaultTransition(L, I);
+		fsm.registerTransition(L, I, 0);
 		fsm.registerDefaultTransition(K,I);
+		fsm.registerTransition(H, M, 5);
+		fsm.registerDefaultTransition(M, M);
+		fsm.registerTransition(L, M, 1);
 
 		lb.add(fsm);
 		
@@ -347,6 +351,11 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		return chef;
 	}
 
+	public void resetTeam() {
+		team = new ArrayList<String>();
+		team.add(this.getLocalName());
+	}
+
 	public List<String> getLine() {
 		return line;
 	}
@@ -424,7 +433,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 				if (content.compareTo(golem) == 0) {
 					isAgent = true;
 					System.out.println(this.getLocalName() + "just stuck on "+ sender);
-					this.updateAgentPosition(sender, content, null);
+					this.updateAgentPosition(sender, content, content);
 					break;
 				}
 				rep = this.receive(repTemplate);
@@ -465,7 +474,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		System.out.println("Call is team ready ?");
 		for (int i = 1; i < team.size(); i++) { // start at 1 because index 0 is the captain calling is method
 			String agent = team.get(i);
-			if (line.get(i) != null && agentsPositions.get(agent).getLeft().compareTo(line.get(i)) != 0) return false;
+			if (line.size() > i && agentsPositions.get(agent).getLeft().compareTo(line.get(i)) != 0) return false;
 		}
 		System.out.println("Team Ready");
 		return true;
@@ -483,5 +492,17 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		setLine(null);
 		setNextLine(null);
 		setGoToNext(false);
+	}
+
+	public void sendStrategy(String agent) {
+		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+		msg.setSender(getAID());
+		msg.setProtocol("PLAN");
+		int i = iteration-1;
+		if (line != null && nextLine != null)
+		msg.setContent(i + ":"+ line +";" + iteration + ":" + nextLine + ";0");
+		else msg.setContent("null");
+		msg.addReceiver(new AID(agent, AID.ISLOCALNAME));
+		sendMessage(msg);
 	}
 }

@@ -11,10 +11,9 @@ import jade.lang.acl.MessageTemplate;
 import java.util.Date;
 import java.util.List;
 
-import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.MaxTeamDistance;
 import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
 
-public class TeamBuildingState extends OneShotBehaviour {
+public class TeamBuildingStateBeha extends OneShotBehaviour {
 
 	private static final long serialVersionUID = 8567689731496787661L;
 
@@ -23,7 +22,7 @@ public class TeamBuildingState extends OneShotBehaviour {
 	private MapRepresentation myMap;
 	private boolean end = false;
 
-	public TeamBuildingState(final AbstractDedaleAgent myagent) {
+	public TeamBuildingStateBeha(final AbstractDedaleAgent myagent) {
 		super(myagent);
 		this.myAgent = (ExploreCoopAgentFSM) myagent;
 		team = myAgent.getTeam();
@@ -37,7 +36,6 @@ public class TeamBuildingState extends OneShotBehaviour {
 
 		if (expiration.before(new Date())) {
 			System.out.println("Agent "+this.myAgent.getLocalName()+" -- " + team);
-//			System.out.println("Agent "+this.myAgent.getLocalName()+" -- team building expiration date reached");
 			end = true;
 		}
 
@@ -68,20 +66,21 @@ public class TeamBuildingState extends OneShotBehaviour {
 
 			System.out.println("Agent "+this.myAgent.getLocalName()+" -- received inform from "+msgReceived.getSender().getLocalName() + " : " + location + " destination : " + destination);
 			myAgent.updateAgentPosition(sender, location, destination);
-			String myDestination = myMap.getLastNodePlan() != null ? myMap.getLastNodePlan() : myAgent.getCurrentPosition().getLocationId();
-			List<String> shortestPath = myMap.getShortestPath(myDestination, destination);
-			if ((shortestPath != null) && (shortestPath.size() < MaxTeamDistance)) {
-				// offer to join team if we hunt the same golem, and we are not yet in the same team ofc
-				if (!team.contains(sender)) {
-					offer.addReceiver(new AID(sender, AID.ISLOCALNAME));
-					System.out.println("Agent "+this.myAgent.getLocalName()+" -- send join to "+sender);
-					// If we are joining a team, we go to the same destination to keep together
-					// only change if the other agent is to be our chef, otherwise they will change their destination
-					if (sender.compareToIgnoreCase(myAgent.getLocalName()) < 0){
-						myMap.setPlannedItinerary(myMap.getShortestPath(myAgent.getCurrentPosition().getLocationId(), destination));
-						myAgent.restartStrategy();
-					}
+
+			if (team.contains(sender)) {
+				// If we are in the same team, we need to update the team's position
+				List<String> line = myAgent.getLine();
+				int i = team.indexOf(sender);
+				// Si un agent de notre équipe n'est pas à la même itération que nous, on lui renvoie le plan. Risque de harceler un agent avec le plan
+				// Permet de relayer le plan à un agent qui n'a pas reçu le plan
+				if (myAgent.getIteration()-1 > Integer.parseInt(info[2])) {
+					myAgent.sendStrategy(sender);
 				}
+			}
+			// offer to join team if we are not yet in the same team
+			else{
+				offer.addReceiver(new AID(sender, AID.ISLOCALNAME));
+				System.out.println("Agent "+this.myAgent.getLocalName()+" -- send join to "+sender);
 			}
 			msgReceived = this.myAgent.receive(msgTemplate);
 		}

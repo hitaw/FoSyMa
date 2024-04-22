@@ -16,6 +16,8 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.UnreadableException;
 
+import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
+
 public class ReceiveMapStateBeha extends OneShotBehaviour{
 	
 	private static final long serialVersionUID = 8567689731496787661L;
@@ -29,7 +31,7 @@ public class ReceiveMapStateBeha extends OneShotBehaviour{
 	@Override
 	public void action() {
 		Date exp = new Date();
-		exp.setTime(exp.getTime() + 1000);
+		exp.setTime(exp.getTime() + WaitTime * 3); // We wait for a rather long time because we want to be sure to receive all the maps
 
 		// Reception de la map
 		int nbCartesAttendues = myAgent.getNbCartesAttendues();

@@ -9,18 +9,17 @@ import jade.lang.acl.ACLMessage;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Set;
 
 import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
 
-public class SendPingPosState extends OneShotBehaviour {
+public class SendPingPosStateBeha extends OneShotBehaviour {
 
 	private static final long serialVersionUID = 8567689731496787661L;
 
 	private List<String> receivers;
 	private ExploreCoopAgentFSM myAgent;
 
-	public SendPingPosState(final AbstractDedaleAgent myagent, List<String> agentNames) {
+	public SendPingPosStateBeha(final AbstractDedaleAgent myagent, List<String> agentNames) {
 		super(myagent);
 		this.myAgent = (ExploreCoopAgentFSM) myagent;
 		this.receivers = agentNames;
@@ -45,7 +44,7 @@ public class SendPingPosState extends OneShotBehaviour {
 			destination = myAgent.getCurrentPosition().getLocationId();
 		}
 
-		ping.setContent(myAgent.getCurrentPosition().getLocationId() + ";" + destination);
+		ping.setContent(myAgent.getCurrentPosition().getLocationId() + ";" + destination + ";" + myAgent.getIteration());
 		// Ajout des receivers
 		for (String agentName : receivers) {
 			ping.addReceiver(new AID(agentName, AID.ISLOCALNAME));

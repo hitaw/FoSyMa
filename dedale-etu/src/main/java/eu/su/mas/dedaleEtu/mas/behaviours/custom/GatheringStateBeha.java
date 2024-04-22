@@ -86,17 +86,21 @@ public class GatheringStateBeha extends OneShotBehaviour {
                     System.out.println(this.myAgent.getLocalName() + " -- GatheringStateBeha: going to " + dest);
 
                     // Calculate path to destination
-                    List<String> path = myMap.getShortestPath(myPosition.getLocationId(), dest);
+                    List<String> path = null;
+                    if (dest != null)
+                        path = myMap.getShortestPath(myPosition.getLocationId(), dest);
                     if (path != null) {
                         if (!path.isEmpty()) {
                             nextNodeId = path.get(0);
                             myMap.setPlannedItinerary(path);
-                        } else {
-                            //TODO aller au hasard à côté
-                            nextNodeId = accessibleNode.getLocationId();
                         }
-                    } else {
-                        nextNodeId = myPosition.getLocationId();
+                    }
+                    if (nextNodeId == null) {
+                        // Si on est sur le noeud avec la plus grande stench ou qu'on a pas de chemin existant pour y aller
+                        //Random move from the current position
+                        myMap.addNewNode(myPosition.getLocationId(), false);
+                        Random r= new Random();
+                        nextNodeId = lobs.get(1+r.nextInt(lobs.size()-1)).getLeft().getLocationId();
                     }
                 }
                 if (((AbstractDedaleAgent)this.myAgent).moveTo(new gsLocation(nextNodeId))) {
@@ -104,6 +108,7 @@ public class GatheringStateBeha extends OneShotBehaviour {
                     myMap.advancePlan();
                     myAgent.setStuck(0);
                 } else {
+                    myAgent.diagnostic(nextNodeId);
                     myAgent.setStuck(myAgent.getStuck() + 1);
                 }
             }

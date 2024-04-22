@@ -7,7 +7,6 @@ import eu.su.mas.dedale.env.gs.gsLocation;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM;
 import eu.su.mas.dedaleEtu.mas.knowledge.MapRepresentation;
-import jade.core.AID;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
@@ -19,7 +18,7 @@ import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.MaxStuck
 import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
 
 
-public class TeamStrategyState extends OneShotBehaviour {
+public class TeamStrategyStateBeha extends OneShotBehaviour {
 
 	private static final long serialVersionUID = 8567689731496787661L;
 
@@ -37,7 +36,7 @@ public class TeamStrategyState extends OneShotBehaviour {
  *
  * @param myagent reference to the agent we are adding this behavior to
  */
-	public TeamStrategyState(final AbstractDedaleAgent myagent) {
+	public TeamStrategyStateBeha(final AbstractDedaleAgent myagent) {
 		super(myagent);
 		myAgent = (ExploreCoopAgentFSM) myagent;
 		team = myAgent.getTeam();
@@ -142,6 +141,7 @@ public class TeamStrategyState extends OneShotBehaviour {
 		this.myMap = myAgent.getMyMap();
 
 		System.out.println(this.myAgent.getLocalName()+" - TeamStrategyState");
+		posGolem = myAgent.getGolemPos();
 
 		if (this.myMap == null) {
 			this.myMap = new MapRepresentation();
@@ -201,15 +201,25 @@ public class TeamStrategyState extends OneShotBehaviour {
 			if (line == null || line.isEmpty()) {
 				System.out.println(this.myAgent.getLocalName() + " --- Didn't get a destination ");
 				// Go to the captain's last known destination (a way to stay together)
-				String captain = myAgent.getChefName();
-				String captainDestination = myAgent.getAgentDestination(captain);
-				myMap.setPlannedItinerary(myMap.getShortestPath(myPosition.getLocationId(), captainDestination));
+				if (posGolem != null) {
+					myMap.setPlannedItinerary(myMap.getShortestPath(myPosition.getLocationId(), posGolem));
+				} else {
+					String captain = myAgent.getChefName();
+					String captainDestination = myAgent.getAgentDestination(captain);
+					myMap.setPlannedItinerary(myMap.getShortestPath(myPosition.getLocationId(), captainDestination)); //TODO if stuck et pas de chemin vers la destination
+				}
 			}
 			else {
 				calculateItinerary(line, myPosition);
 				expiration = new Date(new Date().getTime() + WaitTime);
 
 				while ((myAgent.getNextLine() == null) && (new Date().before(expiration))){ // We are at the line node
+					// just slow the calculation
+					try {
+						this.myAgent.doWait(WaitTime/10);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 					updatePlan();
 					calculateItinerary(myAgent.getLine(), myPosition);
 				}

@@ -21,6 +21,8 @@ import dataStructures.serializableGraph.*;
 import dataStructures.tuple.Couple;
 import javafx.application.Platform;
 
+import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
+
 /**
  * This simple topology representation only deals with the graph, not its
  * content.</br>
@@ -104,7 +106,7 @@ public class MapRepresentation implements Serializable {
 			n = this.g.addNode(id);
 		} else {
 			n = this.g.getNode(id);
-			stench = (Integer) n.getAttribute("stench.count");
+			stench = getStenchValue(n); // The stench value is pondered by date
 		}
 		n.clearAttributes();
 		if (stench>0) {
@@ -125,7 +127,7 @@ public class MapRepresentation implements Serializable {
 		addNode(id, mapAttribute);
 		Node n = this.g.getNode(id);
         if (stench) {
-			n.setAttribute("stench.count", (Integer) n.getAttribute("stench.count") + 1);
+			n.setAttribute("stench.count", getStenchValue(n) + 1);
 			if (mapAttribute == MapAttribute.open) {
                 mapAttribute = MapAttribute.openStench;
             }
@@ -168,7 +170,7 @@ public class MapRepresentation implements Serializable {
         Node n = this.g.getNode(id);
         String nodeClass = (String) n.getAttribute("ui.class");
 		// Si le noeud n'était pas puant et qu'on dit qu'il l'est, on change sa classe à stench
-        if ((Integer)n.getAttribute("stench.count") == 0 && stench) {
+        if (getStenchValue(n) == 0 && stench) {
             if (nodeClass == MapAttribute.open.toString()) {
                 n.setAttribute("ui.class", MapAttribute.openStench.toString());
             } else if (nodeClass == MapAttribute.closed.toString()) {
@@ -183,9 +185,22 @@ public class MapRepresentation implements Serializable {
             }
         }
 
-		if (stench) n.setAttribute("stench.count", (Integer)n.getAttribute("stench.count") + 1);
+		if (stench) n.setAttribute("stench.count", getStenchValue(n) + 1);
 		n.setAttribute("stench.date", new Date()); // update the stench date on an already existing node
 		return false;
+	}
+
+	public int getStenchValue(Node n) {
+		int count = (Integer) n.getAttribute("stench.count");
+		Date date = (Date) n.getAttribute("stench.date");
+
+		Date now = new Date();
+		long diff = now.getTime() - date.getTime();
+		long diffIt = diff / (WaitTime*30);
+		// We consider that the stench is reduced by one every WaitTime*30
+		// This is completely arbitrary and might need adjustment for better performance
+		return (int) Math.max(0, count - diffIt);
+
 	}
 
 	/**
@@ -449,9 +464,9 @@ public class MapRepresentation implements Serializable {
                 } else if (n.getNodeContent().getLeft().toString() == MapAttribute.stench.toString()) {
                     newnode.setAttribute("ui.class", MapAttribute.stench.toString());
                 }
-                if (((Integer)newnode.getAttribute("stench.count") != 0) && (newnode.getAttribute("ui.class").toString() == MapAttribute.open.toString())) {
+                if ((getStenchValue(newnode) != 0) && (newnode.getAttribute("ui.class").toString() == MapAttribute.open.toString())) {
                     newnode.setAttribute("ui.class", MapAttribute.openStench.toString());
-                } else if (((Integer)newnode.getAttribute("stench.count") == 0) && (newnode.getAttribute("ui.class").toString() == MapAttribute.openStench.toString())) {
+                } else if ((getStenchValue(newnode) == 0) && (newnode.getAttribute("ui.class").toString() == MapAttribute.openStench.toString())) {
                     newnode.setAttribute("ui.class", MapAttribute.open.toString());
                 }
 			}
@@ -506,7 +521,7 @@ public class MapRepresentation implements Serializable {
 				if (diff.g.getNode(s) == null) { // if the node is not in diff, add it, otherwise it will try to add an edge to a non-existing node
 					MapAttribute attr = MapAttribute.valueOf((String) this.g.getNode(s).getAttribute("ui.class"));
 					Date stenchDate = (Date) this.g.getNode(s).getAttribute("stench.date");
-					int stenchCount = (Integer) this.g.getNode(s).getAttribute("stench.count");
+					int stenchCount = getStenchValue(this.g.getNode(s));
 
 					diff.addNode(s, attr, stenchDate, stenchCount);
 				}
@@ -525,12 +540,19 @@ public class MapRepresentation implements Serializable {
 				.isPresent();
 	}
 
+	/**
+	 * This function returns the node that has the most smell, considering that smell fades over time
+	 * @return the node that has the most pertinent smell to explore
+	 */
 	public String getStinkiestNode() {
 		Node res = this.g.getNode(0);
 		for (Node n : this.g) {
-			if ((Integer) n.getAttribute("stench.count") >(Integer) res.getAttribute("stench.count")) {
+			if (getStenchValue(n) > getStenchValue(res)) {
 				res = n;
 			}
+		}
+		if (getStenchValue(res) == 0) {
+			return null;
 		}
 		return res.getId();
 	}
@@ -607,6 +629,11 @@ public class MapRepresentation implements Serializable {
 			if (getShortestPath(n2, dest).size() == len)  res.add(n2);
 		}
 		return res;
+	}
+
+	public String getRandomNode() {
+		List<String> nodes = this.g.nodes().map(Node::getId).collect(Collectors.toList());
+		return nodes.get(new Random().nextInt(nodes.size()));
 	}
 
 }
