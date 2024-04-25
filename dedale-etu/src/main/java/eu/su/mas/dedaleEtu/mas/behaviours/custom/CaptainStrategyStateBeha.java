@@ -58,10 +58,12 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 		myAgent.addAllEdges(); // We need to add all edges to make sure the arity of nodes is not broken
 		myAgent.clearRemovedEdges();
 		possibleNodes = myMap.getCloseNodesMaxArity(team.size(), ExploreCoopAgentFSM.MaxDistanceGolem, posGolem);
+
 		// Décide de la stratégie
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 		msg.setSender(this.myAgent.getAID());
 		msg.setProtocol("PLAN");
+
 		if (!possibleNodes.isEmpty()) {
 			// Hypothèse : le golem est sur le noeud posGolem
 			// On choisit le noeud qui nous intéresse pour bloquer le golem et on fait un ligne derrière lui
@@ -70,30 +72,11 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 			List<String> golemPath = myMap.getShortestPath(posGolem, objectifGolem); // Hope is sweet
 			String nextGolemStep = golemPath.isEmpty() ? posGolem : golemPath.get(0);
 			nextLine = myMap.neighborLine(nextGolemStep, objectifGolem);
-			// traitement de la ligne pour mettre les noeuds au bon endroit pour les agents TODO TODO TODO TODO
-//			Map<Integer, String> IntermediaireNextLine = new HashMap<>();
-//			for (int i = 0; i < team.size() && i < line.size(); i++) {
-//				String node = line.get(i);
-//				for (int j = 0; j < nextLine.size(); j++) {
-//					String node2 = nextLine.get(j);
-//					if (myMap.isNeighbor(node, node2)) {
-//						IntermediaireNextLine.put(i, node2);
-//						nextLine.remove(j);
-//						break;
-//					}
-//				}
-//			}
-//			for (int i = 0; i < team.size(); i++) {
-//				if (IntermediaireNextLine.containsKey(i)) {
-//					nextLine.add(i,IntermediaireNextLine.get(i));
-//				}
-//			}
 
 
 			msg.setContent(this.iteration + ":"+ line.toString() +";" + ++this.iteration + ":" + nextLine.toString()+ ";" + objectifGolem);
 			myAgent.setLine(line);
 			myAgent.setNextLine(nextLine);
-			myAgent.increaseIteration();
 		}
 		else { // There is no interesting nodes for our team, we need more agents
 			msg.setContent("null");
@@ -132,7 +115,6 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 			msg.addReceiver(new AID(agentName, AID.ISLOCALNAME));
 		}
 		((AbstractDedaleAgent)this.myAgent).sendMessage(msg);
-
 	}
 
 	private String choiceNode() {
@@ -153,9 +135,10 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 
 		int length = Integer.MAX_VALUE;
 		for (String s : line) {
-			path = myMap.getShortestPath(myPosition.getLocationId(), s);
-			if (path.size() < length) {
-                length = path.size();
+			List<String> p = myMap.getShortestPath(myPosition.getLocationId(), s);
+			if (p != null && p.size() < length) {
+                length = p.size();
+				path = p;
 			}
 		}
 		myMap.setPlannedItinerary(path);
@@ -251,6 +234,7 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 					if (myAgent.isReady()) {
 						myAgent.setLine(myAgent.getNextLine());
 						myAgent.setNextLine(null);
+						myAgent.increaseIteration();
 					}
 					if (!stinks) {
 						myAgent.removeGolemPos();
@@ -275,6 +259,7 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 						ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 						msg.setSender(this.myAgent.getAID());
 						msg.setProtocol("FREEZE");
+						msg.setContent(objectifGolem);
 						for (int i = 0; i < line.size(); i++) { // line forcément plus petit que le nb d'agents de la team par définition du blocage
 							msg.addReceiver(new AID(team.get(i), AID.ISLOCALNAME));
 							System.out.println("Send freeze to " + team.get(i));

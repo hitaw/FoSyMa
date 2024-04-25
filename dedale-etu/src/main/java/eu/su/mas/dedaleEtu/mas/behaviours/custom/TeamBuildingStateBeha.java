@@ -80,7 +80,7 @@ public class TeamBuildingStateBeha extends OneShotBehaviour {
 //				int i = team.indexOf(sender);
 				// Si un agent de notre équipe n'est pas à la même itération que nous, on lui renvoie le plan. Risque de harceler un agent avec le plan
 				// Permet de relayer le plan à un agent qui n'a pas reçu le plan
-				if (myAgent.getIteration()-1 > Integer.parseInt(info[2])) {
+				if (myAgent.getIteration() > Integer.parseInt(info[2])) {
 					myAgent.sendStrategy(sender);
 				}
 			}
@@ -97,7 +97,7 @@ public class TeamBuildingStateBeha extends OneShotBehaviour {
 	@Override
 	public int onEnd() {
 		if (end) {
-			myAgent.setExpiration(new Date(new Date().getTime() + WaitTime));
+			myAgent.setExpiration(new Date(new Date().getTime() + WaitTime*2));
 			return 1;
 		}
 		return 0;

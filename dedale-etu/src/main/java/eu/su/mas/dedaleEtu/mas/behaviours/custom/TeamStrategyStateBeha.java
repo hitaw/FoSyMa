@@ -29,6 +29,7 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 	String objectifGolem = null;
 	String posGolem;
 	int iteration = 0;
+	String lastKnownDestination = null;
 
 	/**
  *
@@ -42,8 +43,8 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 	}
 
 	private void calculatePlan() {
-		List<String> line = null;
-		List<String> nextLine = null;
+		List<String> line = myAgent.getLine();
+		List<String> nextLine = myAgent.getNextLine();
 		myMap = myAgent.getMyMap();
 		teamMember = team.indexOf(myAgent.getLocalName());
 
@@ -68,8 +69,8 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
                 if (it >= this.iteration) { // We might receive messages that are outdated, we check with the iteration number
                     this.iteration = it;
 					myAgent.setIteration(it);
-					if (info[0].compareTo("") != 0) line = parseList(info[0].split(":")[1]);
-                    if (info[1].compareTo("") != 0) nextLine = parseList(info[1].split(":")[1]);
+					if (info[0].compareTo("") != 0 && info[0].compareTo("[]") !=0) line = parseList(info[0].split(":")[1]);
+                    if (info[1].compareTo("") != 0 && info[1].compareTo("[]") !=0) nextLine = parseList(info[1].split(":")[1]);
                     objectifGolem = info[2];
                     System.out.println(this.myAgent.getLocalName() + "-- received plan -- " + line + " -- " + nextLine);
                     myAgent.setLine(line);
@@ -95,18 +96,26 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
         ACLMessage msgReceived = this.myAgent.receive(msgTemplate);
         while (msgReceived != null) {
             String content = msgReceived.getContent();
-//            System.out.println(this.myAgent.getLocalName() + "-- received plan from " + msgReceived.getSender().getLocalName());
+			if (content.compareTo("null") == 0) {
+				System.out.println("Not enough agents in team");
+				msgReceived = this.myAgent.receive(msgTemplate);
+				continue;
+			}
+//          System.out.println(this.myAgent.getLocalName() + "-- received plan from " + msgReceived.getSender().getLocalName());
             String[] info = content.split(";");
-            int it = Integer.parseInt(info[0].split(":")[0]); // TODO check the strings sent
+            int it = Integer.parseInt(info[0].split(":")[0]);
             if (it >= this.iteration) { // We might receive messages that are outdated, we check with the iteration number
 				myAgent.setGoToNext(true);
                 this.iteration = it;
 				myAgent.setIteration(it);
-                myAgent.setLine(parseList(info[0].split(":")[1]));
-                myAgent.setNextLine(parseList(info[1].split(":")[1]));
-				System.out.println(this.myAgent.getLocalName() + "-- received plan -- " + myAgent.getLine() + " -- " + myAgent.getNextLine());
-
-			}
+				List<String> line = new ArrayList<>();
+				List<String> nextLine = new ArrayList<>();
+				if (info[0].compareTo("") != 0 && info[0].compareTo("[]") !=0) line = parseList(info[0].split(":")[1]);
+				if (info[1].compareTo("") != 0 && info[1].compareTo("[]") !=0) nextLine = parseList(info[1].split(":")[1]);
+				objectifGolem = info[2];
+				System.out.println(this.myAgent.getLocalName() + "-- received plan -- " + line + " -- " + nextLine);
+				myAgent.setLine(line);
+				myAgent.setNextLine(nextLine);}
             msgReceived = this.myAgent.receive(msgTemplate);
 		}
 
@@ -131,12 +140,17 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 		List<String> path = myMap.getShortestPath(myPosition.getLocationId(), line.get(0));
 
 		int length = Integer.MAX_VALUE;
+		String chosen = line.get(0);
 		for (String s : line) {
-			path = myMap.getShortestPath(myPosition.getLocationId(), s);
-			if (path != null && path.size() < length) {
+			if (s == lastKnownDestination) continue;
+			List<String> p = myMap.getShortestPath(myPosition.getLocationId(), s);
+			if (p != null && p.size() < length) {
+				chosen = s;
 				length = path.size();
+				path = p;
 			}
 		}
+		lastKnownDestination = chosen; //won't try to go twice to the same node
 		myMap.setPlannedItinerary(path);
 	}
 
@@ -189,7 +203,7 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 			}
 
 			Couple<Location, List<Couple<Observation, Integer>>> obs = lobs.get(0);
-			boolean stinks = !obs.getRight().isEmpty() && (obs.getRight().get(0).getLeft().toString().equals("Stench"));
+//			boolean stinks = !obs.getRight().isEmpty() && (obs.getRight().get(0).getLeft().toString().equals("Stench"));
 
 			//2) get the surrounding nodes and update stench
 			String nextNodeId=null;
@@ -209,7 +223,7 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 				line = myAgent.getLine();
 			}
 
-			if (line == null || line.isEmpty()) {
+			if (line == null || line.isEmpty() || (line.size()==1 && line.get(0) == "")) {
 				System.out.println(this.myAgent.getLocalName() + " --- Didn't get a destination ");
 				// Go to the captain's last known destination (a way to stay together)
 				if (posGolem != null) {
@@ -231,7 +245,7 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
-					updatePlan();  // TODO need to check if no new plan sent
+					updatePlan();
 					calculateItinerary(myAgent.getLine(), myPosition);
 				}
 			}

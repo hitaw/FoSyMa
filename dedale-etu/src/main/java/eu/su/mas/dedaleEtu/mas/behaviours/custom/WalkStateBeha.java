@@ -29,7 +29,7 @@ public class WalkStateBeha extends OneShotBehaviour {
 
 	private ExploreCoopAgentFSM myAgent;
 
-	public static final int TimeoutRemovedEdge = 10;
+	public static final int TimeoutRemovedEdge = 15;
 
 /**
  * 

@@ -38,7 +38,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 	public void action() {
 //		System.out.println(this.myAgent.getLocalName() + " -- WaitAnswerHuntState");
 		myMap = myAgent.getMyMap();
-
+		listReceiver  = new ArrayList<String>();
 		end = false;
 		Date expiration = myAgent.getExpiration();
 		if (expiration.before(new Date())) {
@@ -76,16 +76,18 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 			String golemPos = golemReceived.getContent().split(";")[0];
 			Date date = new Date(Long.parseLong(golemReceived.getContent().split(";")[1]));
 			if ((myAgent.getGolemDate() == null) || (myAgent.getGolemDate().before(date))) {
+				if (golemPos != myAgent.getGolemPos() && this.myAgent.getLocalName().compareTo(myAgent.getChefName()) == 0 ){ // if the position changed we recalculate the strategy
+					myAgent.setLine(null);
+					myAgent.setNextLine(null);
+				}
 				myAgent.setGolemPos(golemPos, date);
-				myAgent.setLine(null);
-				myAgent.setNextLine(null);
 			}
 			golemReceived = this.myAgent.receive(golemFound);
 		}
 
 		/*------------------------- map sharing with the other agents -----------------------------*/
 		// Deal with agents that didn't finish exploration first
-		listReceiver  = new ArrayList<String>();
+
 		//Reception de ping + envoi du yes
 
 		MessageTemplate pingTemplate = MessageTemplate.and(
@@ -185,7 +187,10 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 					// If we are joining a team, we go to the same destination to keep together
 					// only change if the other agent is to be our chef, otherwise they will change their destination
 					if (agent.compareToIgnoreCase(myAgent.getChefName()) < 0){
+						if (destination == null)
+							destination = content.split(";")[1];
 						myMap.setPlannedItinerary(myMap.getShortestPath(myAgent.getCurrentPosition().getLocationId(), destination));
+
 					}
 					myAgent.addTeamMember(agent);
 					team = myAgent.getTeam();
@@ -205,7 +210,8 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 				}
 				updateTeam.addReceiver(new AID(agent,AID.ISLOCALNAME));
 			}
-			updateTeam.setContent(team.toString() + ";" + (myAgent.getAgentDestination(myAgent.getChefName()) ==null ? myAgent.getCurrentPosition().getLocationId() : myAgent.getAgentDestination(myAgent.getChefName())));
+			String dest = (myAgent.getAgentDestination(myAgent.getChefName()) ==null ? myAgent.getCurrentPosition().getLocationId() : myAgent.getAgentDestination(myAgent.getChefName()));
+			updateTeam.setContent(team.toString() + ";" + dest);
 			System.out.println(this.myAgent.getLocalName()+ "-- send update to team -- " + team.toString());
 			((AbstractDedaleAgent)this.myAgent).sendMessage(updateTeam);
 		}
@@ -218,6 +224,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 		if (freezeReceived != null) {
 			System.out.println(this.myAgent.getLocalName()+ "-- received freeze from "+freezeReceived.getSender().getLocalName());
 			freeze = true;
+			myAgent.setGolemPos(freezeReceived.getContent(), new Date());
 			return;
 		}
 

@@ -13,6 +13,7 @@ public class FrozenStateBeha extends OneShotBehaviour {
 	private static final long serialVersionUID = 8567689731496787661L;
 
 	private ExploreCoopAgentFSM myAgent;
+	boolean error = false;
 
 	public FrozenStateBeha(final AbstractDedaleAgent myagent) {
 		super(myagent);
@@ -21,6 +22,7 @@ public class FrozenStateBeha extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+		error = false;
 		System.out.println(this.myAgent.getLocalName() + " -- I'm frozen");
 
 		// just slow the calculation
@@ -30,6 +32,7 @@ public class FrozenStateBeha extends OneShotBehaviour {
 			e.printStackTrace();
 		}
 
+		error = !myAgent.diagnostic(myAgent.getGolemPos());
 		MessageTemplate diagTemplate = MessageTemplate.and(
 				MessageTemplate.MatchProtocol("DIAGNOSTIC"),
 				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
@@ -48,5 +51,13 @@ public class FrozenStateBeha extends OneShotBehaviour {
 			}
 			diagReceived = this.myAgent.receive(diagTemplate);
 		}
+	}
+
+	@Override
+	public int onEnd() {
+		if (error) {
+			return 1;
+		}
+		return 0;
 	}
 }

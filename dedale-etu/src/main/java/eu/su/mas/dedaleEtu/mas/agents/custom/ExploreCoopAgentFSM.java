@@ -39,19 +39,23 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	// General variables
 	List<String> list_agentNames = new ArrayList<String>();
-	public static final int WaitTime = 200;
+	public static final int WaitTime = 100;
 	private MapRepresentation myMap;
 	private Date expiration = new Date();
 	private Map<Edge, Integer> edgesRemoved = new HashMap<Edge, Integer>();
 	public static final int MaxStuck = 2;
+
 	// the number of times the agent tried to go to the same node and failed
 	private int stuck = 0;
+
 	// Exploration variables
 	private List<String> voisins = new ArrayList<String>();
 	private Map<String,Integer> recents = new HashMap<String,Integer>();
 	private Map<String, MapRepresentation> receivedMaps = new HashMap<String, MapRepresentation>();
 	public static final int ExchangeTimeout = 3;
 	private int nbCartesAttendues = 0;
+
+
 	// Hunting variables
 	private boolean hunting = false;
 	private List<String> team = new ArrayList<String>();
@@ -137,7 +141,8 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		fsm.registerTransition(L, I, 0);
 		fsm.registerDefaultTransition(K,I);
 		fsm.registerTransition(H, M, 5);
-		fsm.registerDefaultTransition(M, M);
+		fsm.registerTransition(M, M, 0);
+		fsm.registerTransition(M, F, 1);
 		fsm.registerTransition(L, M, 1);
 
 		lb.add(fsm);
@@ -212,7 +217,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	}
 
 	public void ageRecent() {
-		System.out.println(this.getLocalName() + "---" + recents);
+//		System.out.println(this.getLocalName() + "---" + recents);
 		List<String> toRemove = new ArrayList<>();
 		for (String key : recents.keySet()) {
 			recents.put(key, recents.get(key) + 1);
@@ -419,7 +424,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		}
 		this.sendMessage(diag);
 
-		Date expiration = new Date(new Date().getTime()+WaitTime*2);
+		Date expiration = new Date(new Date().getTime()+WaitTime*3);
 		MessageTemplate repTemplate = MessageTemplate.and(
 				MessageTemplate.MatchProtocol("DIAGNOSTIC"),
 				MessageTemplate.MatchPerformative(ACLMessage.CONFIRM));
@@ -443,8 +448,10 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 			System.out.println(this.getLocalName() + " -- golem detected at "+golem);
 			Date date = new Date();
 			this.setGolemPos(golem, date);
-			this.setLine(null);
-			this.setNextLine(null);
+			if (getLocalName().compareTo(getChefName()) == 0){
+				this.setLine(null);
+				this.setNextLine(null);
+			}
 			ACLMessage spotted = new ACLMessage(ACLMessage.INFORM);
 			spotted.setSender(this.getAID());
 			spotted.setProtocol("GOLEM");
@@ -472,10 +479,6 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	public boolean isReady() {
 		System.out.println("Call is team ready ?");
-//		for (int i = 1; i < team.size(); i++) { // start at 1 because index 0 is the captain calling is method
-//			String agent = team.get(i);
-//			if (line.size() > i && agentsPositions.get(agent).getLeft().compareTo(line.get(i)) != 0) return false;
-//		}
 		int cpt = 1;
 		for (int i = 1; i < team.size(); i++) {
 			String agent = team.get(i);
@@ -503,9 +506,9 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 		msg.setSender(getAID());
 		msg.setProtocol("PLAN");
-		int i = iteration-1;
-		if (line != null && nextLine != null)
-		msg.setContent(i + ":"+ line +";" + iteration + ":" + nextLine + ";0");
+		int i = iteration;
+		if (line != null)
+			msg.setContent(i + ":"+ line +";" + ++i + ":" + nextLine + ";0");
 		else msg.setContent("null");
 		msg.addReceiver(new AID(agent, AID.ISLOCALNAME));
 		sendMessage(msg);
