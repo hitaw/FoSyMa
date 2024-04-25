@@ -29,8 +29,6 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 	String objectifGolem = null;
 	String posGolem;
 	int iteration = 0;
-	String nextDestination = null;
-
 
 	/**
  *
@@ -44,8 +42,8 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 	}
 
 	private void calculatePlan() {
-		List<String> line;
-		List<String> nextLine;
+		List<String> line = null;
+		List<String> nextLine = null;
 		myMap = myAgent.getMyMap();
 		teamMember = team.indexOf(myAgent.getLocalName());
 
@@ -70,8 +68,8 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
                 if (it >= this.iteration) { // We might receive messages that are outdated, we check with the iteration number
                     this.iteration = it;
 					myAgent.setIteration(it);
-                    line = parseList(info[0].split(":")[1]);
-                    nextLine = parseList(info[1].split(":")[1]);
+					if (info[0].compareTo("") != 0) line = parseList(info[0].split(":")[1]);
+                    if (info[1].compareTo("") != 0) nextLine = parseList(info[1].split(":")[1]);
                     objectifGolem = info[2];
                     System.out.println(this.myAgent.getLocalName() + "-- received plan -- " + line + " -- " + nextLine);
                     myAgent.setLine(line);
@@ -99,7 +97,7 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
             String content = msgReceived.getContent();
 //            System.out.println(this.myAgent.getLocalName() + "-- received plan from " + msgReceived.getSender().getLocalName());
             String[] info = content.split(";");
-            int it = Integer.parseInt(info[0].split(":")[0]);
+            int it = Integer.parseInt(info[0].split(":")[0]); // TODO check the strings sent
             if (it >= this.iteration) { // We might receive messages that are outdated, we check with the iteration number
 				myAgent.setGoToNext(true);
                 this.iteration = it;
@@ -115,18 +113,31 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 	}
 
 
+//	private void calculateItinerary(List<String> line, Location myPosition) {
+//		nextDestination = line.size() > teamMember ? line.get(teamMember) : null;
+//		if (myMap.getLastNodePlan()!=null && nextDestination != null && nextDestination.compareTo(myMap.getLastNodePlan()) == 0) {
+//			return;
+//		}
+//		if (nextDestination != null) {
+//			List<String> path = myMap.getShortestPath(myPosition.getLocationId(), nextDestination);
+//			if ((path != null) && (!path.isEmpty())) {
+//				myMap.setPlannedItinerary(path);
+//				System.out.println("Agent " + this.myAgent.getLocalName() + "--- path to line: " + path + "it = " +iteration);
+//			}
+//		}
+//	}
+
 	private void calculateItinerary(List<String> line, Location myPosition) {
-		nextDestination = line.size() > teamMember ? line.get(teamMember) : null;
-		if (myMap.getLastNodePlan()!=null && nextDestination != null && nextDestination.compareTo(myMap.getLastNodePlan()) == 0) {
-			return;
-		}
-		if (nextDestination != null) {
-			List<String> path = myMap.getShortestPath(myPosition.getLocationId(), nextDestination);
-			if ((path != null) && (!path.isEmpty())) {
-				myMap.setPlannedItinerary(path);
-				System.out.println("Agent " + this.myAgent.getLocalName() + "--- path to line: " + path + "it = " +iteration);
+		List<String> path = myMap.getShortestPath(myPosition.getLocationId(), line.get(0));
+
+		int length = Integer.MAX_VALUE;
+		for (String s : line) {
+			path = myMap.getShortestPath(myPosition.getLocationId(), s);
+			if (path != null && path.size() < length) {
+				length = path.size();
 			}
 		}
+		myMap.setPlannedItinerary(path);
 	}
 
 	@Override
@@ -205,7 +216,7 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 					myMap.setPlannedItinerary(myMap.getShortestPath(myPosition.getLocationId(), posGolem));
 				} else {
 					String captain = myAgent.getChefName();
-					String captainDestination = myAgent.getAgentDestination(captain);
+					String captainDestination = myAgent.getAgentDestination(captain) == null ? myPosition.getLocationId() : myAgent.getAgentDestination(captain);
 					myMap.setPlannedItinerary(myMap.getShortestPath(myPosition.getLocationId(), captainDestination)); //TODO if stuck et pas de chemin vers la destination
 				}
 			}
@@ -220,7 +231,7 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
-					updatePlan();
+					updatePlan();  // TODO need to check if no new plan sent
 					calculateItinerary(myAgent.getLine(), myPosition);
 				}
 			}
@@ -230,12 +241,14 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 			if (this.myAgent.moveTo(new gsLocation(nextNodeId))) {
 				myMap.advancePlan();
 				myAgent.setStuck(0);
+				updatePlan(); // TODO not clean here
 				if ((myMap.getNextNodePlan() == null) && myAgent.getGoToNext()) { // We are at our next destination
 					myAgent.setLine(myAgent.getNextLine());
 					myAgent.setNextLine(null);
 					myAgent.setGoToNext(false);
 				}
 			} else {
+				updatePlan();
 				myAgent.setStuck(myAgent.getStuck() + 1);
 				myAgent.diagnostic(nextNodeId);
 			}

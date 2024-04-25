@@ -631,6 +631,10 @@ public class MapRepresentation implements Serializable {
 		return res;
 	}
 
+    public boolean isNeighbor(String node1, String node2) {
+        return g.getNode(node1).neighborNodes().anyMatch(n -> n.getId().equals(node2));
+    }
+
 	public String getRandomNode() {
 		List<String> nodes = this.g.nodes().map(Node::getId).collect(Collectors.toList());
 		return nodes.get(new Random().nextInt(nodes.size()));

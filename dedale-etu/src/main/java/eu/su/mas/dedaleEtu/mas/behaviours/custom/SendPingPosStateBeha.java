@@ -27,6 +27,7 @@ public class SendPingPosStateBeha extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+		System.out.println(this.myAgent.getLocalName() + "SendPingPosState");
 		//Envoi du ping
 		MapRepresentation myMap = myAgent.getMyMap();
 		if(myMap ==null) {

@@ -36,6 +36,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+//		System.out.println(this.myAgent.getLocalName() + " -- WaitAnswerHuntState");
 		myMap = myAgent.getMyMap();
 
 		end = false;
@@ -228,7 +229,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 
 		ACLMessage freeReceived = this.myAgent.receive(freeTemplate);
 		if (freeReceived != null) {
-			System.out.println(this.myAgent.getLocalName()+ "-- received free from "+freezeReceived.getSender().getLocalName());
+			System.out.println(this.myAgent.getLocalName()+ "-- received free from "+freeReceived.getSender().getLocalName());
 
 			myAgent.resetTeam();
 			myAgent.restartStrategy();
@@ -240,7 +241,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 
 		// won't spam
 		try {
-			this.myAgent.doWait(WaitTime /10);
+			this.myAgent.doWait(WaitTime/10);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

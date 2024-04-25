@@ -30,6 +30,13 @@ public class TeamBuildingStateBeha extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+		try {
+			this.myAgent.doWait(WaitTime/10);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+//		System.out.println(this.myAgent.getLocalName() + " -- TeamBuildingState");
 		end = false;
 		team = myAgent.getTeam();
 		Date expiration = myAgent.getExpiration();
@@ -69,8 +76,8 @@ public class TeamBuildingStateBeha extends OneShotBehaviour {
 
 			if (team.contains(sender)) {
 				// If we are in the same team, we need to update the team's position
-				List<String> line = myAgent.getLine();
-				int i = team.indexOf(sender);
+//				List<String> line = myAgent.getLine();
+//				int i = team.indexOf(sender);
 				// Si un agent de notre équipe n'est pas à la même itération que nous, on lui renvoie le plan. Risque de harceler un agent avec le plan
 				// Permet de relayer le plan à un agent qui n'a pas reçu le plan
 				if (myAgent.getIteration()-1 > Integer.parseInt(info[2])) {

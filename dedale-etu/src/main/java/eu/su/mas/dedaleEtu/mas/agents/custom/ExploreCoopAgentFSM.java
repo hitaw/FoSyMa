@@ -39,7 +39,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	// General variables
 	List<String> list_agentNames = new ArrayList<String>();
-	public static final int WaitTime = 100;
+	public static final int WaitTime = 200;
 	private MapRepresentation myMap;
 	private Date expiration = new Date();
 	private Map<Edge, Integer> edgesRemoved = new HashMap<Edge, Integer>();
@@ -472,12 +472,16 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	public boolean isReady() {
 		System.out.println("Call is team ready ?");
-		for (int i = 1; i < team.size(); i++) { // start at 1 because index 0 is the captain calling is method
+//		for (int i = 1; i < team.size(); i++) { // start at 1 because index 0 is the captain calling is method
+//			String agent = team.get(i);
+//			if (line.size() > i && agentsPositions.get(agent).getLeft().compareTo(line.get(i)) != 0) return false;
+//		}
+		int cpt = 1;
+		for (int i = 1; i < team.size(); i++) {
 			String agent = team.get(i);
-			if (line.size() > i && agentsPositions.get(agent).getLeft().compareTo(line.get(i)) != 0) return false;
+			if (line.contains(getAgentPosition(agent))) cpt ++;
 		}
-		System.out.println("Team Ready");
-		return true;
+		return (cpt == team.size() || cpt == line.size());
 	}
 
 	public boolean getGoToNext() {
@@ -495,6 +499,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	}
 
 	public void sendStrategy(String agent) {
+		System.out.println(this.getLocalName() + " -- send strategy to "+agent);
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 		msg.setSender(getAID());
 		msg.setProtocol("PLAN");

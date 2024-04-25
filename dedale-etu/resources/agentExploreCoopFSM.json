@@ -12,7 +12,7 @@
   },
   {
     "agentType":"agentExplo",
-    "agentName": "Tim",
+    "agentName": "Olaf",
     "communicationRange": 3,
     "initialLocation": "free",
     "backPackCapacityGold": 100,
@@ -23,7 +23,7 @@
   },
   {
     "agentType":"agentExplo",
-    "agentName": "Marthe",
+    "agentName": "Anna",
     "communicationRange": 3,
     "initialLocation": "free",
     "backPackCapacityGold": 100,
@@ -34,7 +34,7 @@
   },
   {
     "agentType": "wumpus",
-    "agentName": "G1",
+    "agentName": "Hanz",
     "communicationRange": 3,
     "initialLocation": "free",
     "backPackCapacityGold": -1,

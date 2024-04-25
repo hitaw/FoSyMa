@@ -22,11 +22,9 @@ import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime
 public class CaptainStrategyStateBeha extends OneShotBehaviour {
 
 	private static final long serialVersionUID = 8567689731496787661L;
-
 	private MapRepresentation myMap;
 	private ExploreCoopAgentFSM myAgent;
 	private List<String> team;
-	private int teamMember = 0;
 	Map<String, Integer> possibleNodes;
 	String objectifGolem = null;
 	String posGolem;
@@ -54,7 +52,7 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 		// The golem is considered to be at the stinkiest node if we don't have a position
 		posGolem = myAgent.getGolemPos() == null ? myMap.getStinkiestNode() : myAgent.getGolemPos();
 		if (posGolem == null) { // no stench detected, select a random node
-			posGolem = myMap.getRandomNode();
+			posGolem = myMap.getRandomNode(); // TODO just démerdez vous vers là bas
 		}
 		// calcul des noeuds proches sur lesquels on a assez d'agents pour bloquer
 		myAgent.addAllEdges(); // We need to add all edges to make sure the arity of nodes is not broken
@@ -74,7 +72,7 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 			nextLine = myMap.neighborLine(nextGolemStep, objectifGolem);
 			// traitement de la ligne pour mettre les noeuds au bon endroit pour les agents TODO TODO TODO TODO
 //			Map<Integer, String> IntermediaireNextLine = new HashMap<>();
-//			for (int i = 0; i < team.size(); i++) {
+//			for (int i = 0; i < team.size() && i < line.size(); i++) {
 //				String node = line.get(i);
 //				for (int j = 0; j < nextLine.size(); j++) {
 //					String node2 = nextLine.get(j);
@@ -83,6 +81,11 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 //						nextLine.remove(j);
 //						break;
 //					}
+//				}
+//			}
+//			for (int i = 0; i < team.size(); i++) {
+//				if (IntermediaireNextLine.containsKey(i)) {
+//					nextLine.add(i,IntermediaireNextLine.get(i));
 //				}
 //			}
 
@@ -146,17 +149,16 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 	}
 
 	private void calculateItinerary(List<String> line, Location myPosition) {
-		String nextDestination = line.size() > teamMember ? line.get(teamMember) : null;
-		if (nextDestination == myMap.getLastNodePlan()) {
-			return;
-		}
-		if (nextDestination != null) {
-			List<String> path = myMap.getShortestPath(myPosition.getLocationId(), nextDestination);
-			if ((path != null) && (!path.isEmpty())) {
-				myMap.setPlannedItinerary(path);
-				System.out.println("Agent " + this.myAgent.getLocalName() + "--- path to line: " + path + "it = " +iteration);
+        List<String> path = myMap.getShortestPath(myPosition.getLocationId(), line.get(0));
+
+		int length = Integer.MAX_VALUE;
+		for (String s : line) {
+			path = myMap.getShortestPath(myPosition.getLocationId(), s);
+			if (path.size() < length) {
+                length = path.size();
 			}
 		}
+		myMap.setPlannedItinerary(path);
 	}
 
 	@Override
@@ -200,14 +202,6 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 			//List of observable from the agent's current position
 			List<Couple<Location,List<Couple<Observation,Integer>>>> lobs=((AbstractDedaleAgent)this.myAgent).observe();//myPosition
 //			System.out.println(this.myAgent.getLocalName()+" - Observations: "+lobs);
-			/**
-			 * Just added here to let you see what the agent is doing, otherwise he will be too quick
-			 */
-			try {
-				this.myAgent.doWait(WaitTime);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
 
 			Couple<Location, List<Couple<Observation, Integer>>> obs = lobs.get(0);
 			boolean stinks = !obs.getRight().isEmpty() && (obs.getRight().get(0).getLeft().toString().equals("Stench"));
@@ -258,6 +252,12 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 						myAgent.setLine(myAgent.getNextLine());
 						myAgent.setNextLine(null);
 					}
+					if (!stinks) {
+						myAgent.removeGolemPos();
+						myMap.addNode(objectifGolem, MapAttribute.closed, false);
+						myAgent.setLine(null);
+						myAgent.setNextLine(null);
+					}
 					if (blocking) {
 						System.out.println("Agent " + this.myAgent.getLocalName() + " --- We are not blocking the golem");
 						myAgent.removeGolemPos();
@@ -267,7 +267,8 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 					}
 				}
 			} else {
-				if (blocking) {
+				boolean isAgent = myAgent.diagnostic(nextNodeId);
+				if (blocking && !isAgent) {
 					System.out.println("Agent " + this.myAgent.getLocalName() + " --- We are blocking the golem");
 					if (myAgent.isReady()) {
 						// tell the useful agents to freeze
@@ -292,9 +293,7 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 					}
 				}
 				myAgent.setStuck(myAgent.getStuck() + 1); // TODO if stuck !=0 on considère qu'on est face au golem ?
-				myAgent.diagnostic(nextNodeId);
 			}
-
 		}
 		myAgent.setMyMap(myMap);
 	}

@@ -6,6 +6,8 @@ import jade.core.behaviours.OneShotBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 
+import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime;
+
 public class FrozenStateBeha extends OneShotBehaviour {
 
 	private static final long serialVersionUID = 8567689731496787661L;
@@ -19,6 +21,15 @@ public class FrozenStateBeha extends OneShotBehaviour {
 
 	@Override
 	public void action() {
+		System.out.println(this.myAgent.getLocalName() + " -- I'm frozen");
+
+		// just slow the calculation
+		try {
+			this.myAgent.doWait(WaitTime/10);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
 		MessageTemplate diagTemplate = MessageTemplate.and(
 				MessageTemplate.MatchProtocol("DIAGNOSTIC"),
 				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
@@ -38,5 +49,4 @@ public class FrozenStateBeha extends OneShotBehaviour {
 			diagReceived = this.myAgent.receive(diagTemplate);
 		}
 	}
-
 }

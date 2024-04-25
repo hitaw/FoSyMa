@@ -310,7 +310,7 @@ public class Principal {
 		//Assert.assertNotNull("This container does not exist",c);
 
 		//2) Give the name of your agent, MUST be the same as the one given in the entities file.
-		agentName="G1";
+		agentName="Hanz";
 
 		//3) If you want to give specific parameters to your agent, add them here
 		Object [] entityParameters0={"My parameters"};
@@ -359,7 +359,7 @@ public class Principal {
 
 		//3) If you want to give specific parameters to your agent, add them here
 //		Object [] entityParametersExplo1={};
-		Object [] entityParametersExplo1={"Tim", "Marthe"};
+		Object [] entityParametersExplo1={"Olaf", "Anna"};
 
 		//4) Give the class name of your agent to let the system instantiate it
 		//ag=createNewDedaleAgent(c, agentName,DummyMovingAgent.class.getName(), entityParametersExplo1);
@@ -375,10 +375,10 @@ public class Principal {
 		Assert.assertNotNull("This container does not exist",c);
 		//
 		//		//2) Give the name of your agent, MUST be the same as the one given in the entities file.
-		agentName="Tim";
+		agentName="Olaf";
 		//
 		//		//3) If you want to give specific parameters to your agent, add them here
-		Object [] entityParametersExplo2={"Elsa", "Marthe"};
+		Object [] entityParametersExplo2={"Elsa", "Anna"};
 		//
 		//		//4) Give the class name of your agent to let the system instantiate it
 		//		ag=createNewDedaleAgent(c, agentName, ExploreCoopAgent.class.getName(), entityParametersExplo2);//ExploreSoloAgent
@@ -396,10 +396,10 @@ public class Principal {
 		Assert.assertNotNull("This container does not exist",c);
 
 		//2) Give the name of your agent, MUST be the same as the one given in the entities file.
-		agentName="Marthe";
+		agentName="Anna";
 
 		//3) If you want to give specific parameters to your agent, add them here
-		Object [] entityParametersExplo3={"Elsa", "Tim"};
+		Object [] entityParametersExplo3={"Elsa", "Olaf"};
 
 		//4) Give the class name of your agent to let the system instantiate it
 		ag=createNewDedaleAgent(c, agentName, ExploreCoopAgentFSM.class.getName(), entityParametersExplo3);
