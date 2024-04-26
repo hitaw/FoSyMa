@@ -70,8 +70,12 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
                     this.iteration = it;
 					myAgent.setIteration(it);
 					if (info[0].compareTo("") != 0 && info[0].compareTo("[]") !=0) line = parseList(info[0].split(":")[1]);
-                    if (info[1].compareTo("") != 0 && info[1].compareTo("[]") !=0) nextLine = parseList(info[1].split(":")[1]);
-                    objectifGolem = info[2];
+					if (info[1].compareTo("") != 0 && info[1].compareTo("[]") !=0){
+						String[] nextIt = info[1].split(":");
+						if (nextIt.length > 1)
+							nextLine = parseList(nextIt[1]);
+						else nextLine = null;
+					}                    objectifGolem = info[2];
                     System.out.println(this.myAgent.getLocalName() + "-- received plan -- " + line + " -- " + nextLine);
                     myAgent.setLine(line);
                     myAgent.setNextLine(nextLine);
