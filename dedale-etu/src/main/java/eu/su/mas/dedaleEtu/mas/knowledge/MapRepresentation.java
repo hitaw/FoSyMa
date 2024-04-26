@@ -568,7 +568,7 @@ public class MapRepresentation implements Serializable {
     }
 
 	private int heuristic(int degre, int distance) {
-		return degre * distance;
+		return degre * (distance+1);
 	}
 
     public Map<String, Integer> getCloseNodesMaxArity(int maxArity, int maxDistance, String posId) {
