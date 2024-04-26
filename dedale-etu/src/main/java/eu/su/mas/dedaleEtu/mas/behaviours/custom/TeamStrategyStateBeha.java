@@ -105,6 +105,7 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 			}
 //          System.out.println(this.myAgent.getLocalName() + "-- received plan from " + msgReceived.getSender().getLocalName());
             String[] info = content.split(";");
+			System.out.println(this.myAgent.getLocalName() + "----- info" + info[1]);
             int it = Integer.parseInt(info[0].split(":")[0]);
             if (it >= this.iteration) { // We might receive messages that are outdated, we check with the iteration number
 				myAgent.setGoToNext(true);
@@ -113,7 +114,12 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 				List<String> line = new ArrayList<>();
 				List<String> nextLine = new ArrayList<>();
 				if (info[0].compareTo("") != 0 && info[0].compareTo("[]") !=0) line = parseList(info[0].split(":")[1]);
-				if (info[1].compareTo("") != 0 && info[1].compareTo("[]") !=0) nextLine = parseList(info[1].split(":")[1]);
+				if (info[1].compareTo("") != 0 && info[1].compareTo("[]") !=0){
+					String[] nextIt = info[1].split(":");
+					if (nextIt.length > 1)
+						nextLine = parseList(nextIt[1]);
+					else nextLine = null;
+				}
 				objectifGolem = info[2];
 				System.out.println(this.myAgent.getLocalName() + "-- received plan -- " + line + " -- " + nextLine);
 				myAgent.setLine(line);
@@ -125,7 +131,6 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 
 	private void calculateItinerary(List<String> line, Location myPosition) {
 		if (line.get(0) == null) return;
-		System.out.println(this.myAgent.getLocalName() + line + "  buuuuuuuuuuuuuuuuuuuuuuuuug");
 		List<String> path = myMap.getShortestPath(myPosition.getLocationId(), line.get(0));
 
 		int length = Integer.MAX_VALUE;

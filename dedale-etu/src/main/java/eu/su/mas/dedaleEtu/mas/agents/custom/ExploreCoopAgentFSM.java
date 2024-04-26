@@ -448,10 +448,6 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 			System.out.println(this.getLocalName() + " -- golem detected at "+golem);
 			Date date = new Date();
 			this.setGolemPos(golem, date);
-			if (getLocalName().compareTo(getChefName()) == 0){
-				this.setLine(null);
-				this.setNextLine(null);
-			}
 			ACLMessage spotted = new ACLMessage(ACLMessage.INFORM);
 			spotted.setSender(this.getAID());
 			spotted.setProtocol("GOLEM");

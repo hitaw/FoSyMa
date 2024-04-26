@@ -279,6 +279,9 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 						((AbstractDedaleAgent)this.myAgent).sendMessage(msgFree);
 						freeze = true;
 					}
+				} else if (isGolem) {
+					myAgent.setLine(null);
+					myAgent.setNextLine(null);
 				}
 				myAgent.setStuck(myAgent.getStuck() + 1); // TODO if stuck !=0 on considère qu'on est face au golem ?
 			}
