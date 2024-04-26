@@ -136,6 +136,8 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 		String chosen;
 		List<String> path;
 		if (line.size() == 1) { // On veut faire en sorte que le chef soit celui sur le premier noeud de la ligne
+			myAgent.addAllEdges();
+			myAgent.clearRemovedEdges();
 			chosen = myMap.neighborLine(myPosition.getLocationId(), line.get(0)).get(0);
 			path = myMap.getShortestPath(myPosition.getLocationId(), chosen);
 			myMap.setPlannedItinerary(path);
