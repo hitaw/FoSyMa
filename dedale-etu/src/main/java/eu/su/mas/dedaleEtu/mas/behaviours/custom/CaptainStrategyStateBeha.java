@@ -225,7 +225,7 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 				nextNodeId = myMap.getNextNodePlan() != null ? myMap.getNextNodePlan() : myPosition.getLocationId();
 
 				// If we are on the line and line == nextLine, we are blocking. Let's check that the golem is indeed where we think by going there
-				if ( myAgent.getLine().equals(myAgent.getNextLine()) && myPosition.getLocationId().equals(line.get(0))) {
+				if ( myAgent.getLine().equals(myAgent.getNextLine()) && line.contains(myPosition.getLocationId())) {
 					nextNodeId = objectifGolem;
 					blocking = true;
 				}

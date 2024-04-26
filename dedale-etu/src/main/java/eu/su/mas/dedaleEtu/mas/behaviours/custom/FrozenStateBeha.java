@@ -31,8 +31,8 @@ public class FrozenStateBeha extends OneShotBehaviour {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
-		error = !myAgent.diagnostic(myAgent.getGolemPos());
+		if (myAgent.getMyMap().isNeighbor(myAgent.getCurrentPosition().getLocationId(), myAgent.getGolemPos()))
+			error = !myAgent.diagnostic(myAgent.getGolemPos());
 		MessageTemplate diagTemplate = MessageTemplate.and(
 				MessageTemplate.MatchProtocol("DIAGNOSTIC"),
 				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));

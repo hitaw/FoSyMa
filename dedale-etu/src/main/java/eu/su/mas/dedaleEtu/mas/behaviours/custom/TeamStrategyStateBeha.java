@@ -109,7 +109,7 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 			}
 //          System.out.println(this.myAgent.getLocalName() + "-- received plan from " + msgReceived.getSender().getLocalName());
             String[] info = content.split(";");
-			System.out.println(this.myAgent.getLocalName() + "----- info" + info[1]);
+//			System.out.println(this.myAgent.getLocalName() + "----- info" + info[1]);
             int it = Integer.parseInt(info[0].split(":")[0]);
             if (it >= this.iteration) { // We might receive messages that are outdated, we check with the iteration number
 				myAgent.setGoToNext(true);
