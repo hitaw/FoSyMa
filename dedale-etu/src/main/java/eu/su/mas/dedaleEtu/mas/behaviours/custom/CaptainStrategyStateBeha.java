@@ -254,7 +254,7 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 					}
 				}
 			} else {
-				boolean isGolem = myAgent.diagnostic(nextNodeId);
+				boolean isGolem = myAgent.diagnostic(nextNodeId, true);
 				if (blocking && isGolem) {
 					System.out.println("Agent " + this.myAgent.getLocalName() + " --- We are blocking the golem");
 					if (myAgent.isReady()) {

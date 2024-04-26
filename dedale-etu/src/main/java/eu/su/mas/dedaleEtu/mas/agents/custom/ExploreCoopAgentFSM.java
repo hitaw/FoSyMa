@@ -44,6 +44,8 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	private Date expiration = new Date();
 	private Map<Edge, Integer> edgesRemoved = new HashMap<Edge, Integer>();
 	public static final int MaxStuck = 2;
+	private final int TimeoutRemovedEdge = 10;
+
 
 	// the number of times the agent tried to go to the same node and failed
 	private int stuck = 0;
@@ -241,7 +243,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	public Edge getEdge() {
 		Edge e = null;
 		for (Edge key : edgesRemoved.keySet()) {
-			if (edgesRemoved.get(key) > WalkStateBeha.TimeoutRemovedEdge){
+			if (edgesRemoved.get(key) > TimeoutRemovedEdge){
 				e = key;
 				edgesRemoved.remove(key);
 				System.out.println("Agent "+this.getLocalName()+" -- added edge "+e.getId()+"\n");
@@ -390,7 +392,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	 * Warning, if called on an empty stinky node, will return true
 	 * @return true if there is a golem in front of the agent, false if it is an agent
 	 */
-	public boolean diagnostic(String nextNodeId) {
+	public boolean diagnostic(String nextNodeId, boolean broadcast) {
 		// If we know that there is an agent in front, no need to do anything
 //		myMap = this.getMyMap();
 //		String golem = myMap.getNextNodePlan();
@@ -444,7 +446,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 				rep = this.receive(repTemplate);
 			}
 		}
-		if (!isAgent) {
+		if (!isAgent && broadcast) {
 			System.out.println(this.getLocalName() + " -- golem detected at "+golem);
 			Date date = new Date();
 			this.setGolemPos(golem, date);

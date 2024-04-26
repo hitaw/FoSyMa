@@ -1,5 +1,6 @@
 package eu.su.mas.dedaleEtu.mas.behaviours.custom;
 
+import eu.su.mas.dedale.env.gs.gsLocation;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM;
 import jade.core.behaviours.OneShotBehaviour;
@@ -31,8 +32,12 @@ public class FrozenStateBeha extends OneShotBehaviour {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (myAgent.getMyMap().isNeighbor(myAgent.getCurrentPosition().getLocationId(), myAgent.getGolemPos()))
-			error = !myAgent.diagnostic(myAgent.getGolemPos());
+		if (myAgent.getMyMap().isNeighbor(myAgent.getCurrentPosition().getLocationId(), myAgent.getGolemPos())){
+			error = !myAgent.diagnostic(myAgent.getGolemPos(), false);
+			if (this.myAgent.moveTo(new gsLocation(myAgent.getGolemPos()))) {
+				error = true;
+			}
+		}
 		MessageTemplate diagTemplate = MessageTemplate.and(
 				MessageTemplate.MatchProtocol("DIAGNOSTIC"),
 				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));

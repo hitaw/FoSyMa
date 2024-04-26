@@ -217,6 +217,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 		}
 
 		/*--------------hunt done----------------*/
+		freeze = false;
 		MessageTemplate freezeTemplate = MessageTemplate.and(
 				MessageTemplate.MatchProtocol("FREEZE"),
 				MessageTemplate.MatchPerformative(ACLMessage.INFORM));

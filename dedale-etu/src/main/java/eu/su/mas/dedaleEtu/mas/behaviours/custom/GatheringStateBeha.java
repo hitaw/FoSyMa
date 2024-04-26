@@ -108,7 +108,7 @@ public class GatheringStateBeha extends OneShotBehaviour {
                     myMap.advancePlan();
                     myAgent.setStuck(0);
                 } else {
-                    myAgent.diagnostic(nextNodeId);
+                    myAgent.diagnostic(nextNodeId, true);
                     myAgent.setStuck(myAgent.getStuck() + 1);
                 }
             }

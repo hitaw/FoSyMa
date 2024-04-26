@@ -145,8 +145,8 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 			List<String> p = myMap.getShortestPath(myPosition.getLocationId(), s);
 			if (p != null && p.size() < length) {
 				chosen = s;
-				length = path.size();
 				path = p;
+				length = path.size();
 			}
 		}
 		lastKnownDestination = chosen; //won't try to go twice to the same node
@@ -264,7 +264,7 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 			} else {
 				updatePlan();
 				myAgent.setStuck(myAgent.getStuck() + 1);
-				myAgent.diagnostic(nextNodeId);
+				myAgent.diagnostic(nextNodeId, true);
 			}
 
 		}

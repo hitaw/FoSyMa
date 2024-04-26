@@ -29,8 +29,6 @@ public class WalkStateBeha extends OneShotBehaviour {
 
 	private ExploreCoopAgentFSM myAgent;
 
-	public static final int TimeoutRemovedEdge = 15;
-
 /**
  * 
  * @param myagent reference to the agent we are adding this behavior to
