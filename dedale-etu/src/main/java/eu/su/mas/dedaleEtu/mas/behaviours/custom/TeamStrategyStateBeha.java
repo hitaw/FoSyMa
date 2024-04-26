@@ -82,8 +82,10 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 
 	}
 
-	private List<String> parseList(String list){
+	private static List<String> parseList(String list){
 		list = list.replaceAll("\\[", "").replaceAll("\\]","").replaceAll(" ", "");
+		if (list.length() == 0)
+			return null;
 		return Arrays.asList(list.split(","));
 	}
 
@@ -121,27 +123,15 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 
 	}
 
-
-//	private void calculateItinerary(List<String> line, Location myPosition) {
-//		nextDestination = line.size() > teamMember ? line.get(teamMember) : null;
-//		if (myMap.getLastNodePlan()!=null && nextDestination != null && nextDestination.compareTo(myMap.getLastNodePlan()) == 0) {
-//			return;
-//		}
-//		if (nextDestination != null) {
-//			List<String> path = myMap.getShortestPath(myPosition.getLocationId(), nextDestination);
-//			if ((path != null) && (!path.isEmpty())) {
-//				myMap.setPlannedItinerary(path);
-//				System.out.println("Agent " + this.myAgent.getLocalName() + "--- path to line: " + path + "it = " +iteration);
-//			}
-//		}
-//	}
-
 	private void calculateItinerary(List<String> line, Location myPosition) {
+		if (line.get(0) == null) return;
+		System.out.println(this.myAgent.getLocalName() + line + "  buuuuuuuuuuuuuuuuuuuuuuuuug");
 		List<String> path = myMap.getShortestPath(myPosition.getLocationId(), line.get(0));
 
 		int length = Integer.MAX_VALUE;
 		String chosen = line.get(0);
 		for (String s : line) {
+			if (s == null) continue;
 			if (s == lastKnownDestination) continue;
 			List<String> p = myMap.getShortestPath(myPosition.getLocationId(), s);
 			if (p != null && p.size() < length) {
@@ -223,7 +213,7 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 				line = myAgent.getLine();
 			}
 
-			if (line == null || line.isEmpty() || (line.size()==1 && line.get(0) == "")) {
+			if (line == null || line.isEmpty()) {
 				System.out.println(this.myAgent.getLocalName() + " --- Didn't get a destination ");
 				// Go to the captain's last known destination (a way to stay together)
 				if (posGolem != null) {
@@ -235,6 +225,7 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 				}
 			}
 			else {
+//				System.out.println(this.myAgent.getLocalName() + "------bug here ?---" +line);
 				calculateItinerary(line, myPosition);
 				expiration = new Date(new Date().getTime() + WaitTime);
 

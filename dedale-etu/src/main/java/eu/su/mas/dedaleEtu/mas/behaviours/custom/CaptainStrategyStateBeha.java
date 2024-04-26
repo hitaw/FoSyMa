@@ -91,8 +91,11 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 		System.out.println("Chef " + this.myAgent.getLocalName()+ "--- line : " + msg.getContent());
 	}
 
-	private List<String> parseList(String list){
+	private static List<String> parseList(String list){
 		list = list.replaceAll("\\[", "").replaceAll("\\]","").replaceAll(" ", "");
+		System.out.println(list.length());
+		if (list.length() == 0)
+			return null;
 		return Arrays.asList(list.split(","));
 	}
 
@@ -251,8 +254,8 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 					}
 				}
 			} else {
-				boolean isAgent = myAgent.diagnostic(nextNodeId);
-				if (blocking && !isAgent) {
+				boolean isGolem = myAgent.diagnostic(nextNodeId);
+				if (blocking && isGolem) {
 					System.out.println("Agent " + this.myAgent.getLocalName() + " --- We are blocking the golem");
 					if (myAgent.isReady()) {
 						// tell the useful agents to freeze

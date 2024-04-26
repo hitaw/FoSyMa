@@ -1,1 +1,1 @@
-http://LAPTOP-L12H7GAS:7778/acc
+http://LAPTOP-L12H7GAS.lan:7778/acc

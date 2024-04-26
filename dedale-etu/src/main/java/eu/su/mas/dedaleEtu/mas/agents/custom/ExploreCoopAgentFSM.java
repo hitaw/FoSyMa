@@ -484,6 +484,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 			String agent = team.get(i);
 			if (line.contains(getAgentPosition(agent))) cpt ++;
 		}
+		System.out.println("Team ready ? "+(cpt == team.size() || cpt == line.size()) + " cpt = "+cpt+" team size = "+team.size() + " line size = "+line.size());
 		return (cpt == team.size() || cpt == line.size());
 	}
 
@@ -507,8 +508,12 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		msg.setSender(getAID());
 		msg.setProtocol("PLAN");
 		int i = iteration;
-		if (line != null)
-			msg.setContent(i + ":"+ line +";" + ++i + ":" + nextLine + ";0");
+		if (line != null && !line.isEmpty()) {
+			String nx;
+			if (nextLine == null) nx = "";
+			else nx = nextLine.toString();
+			msg.setContent(i + ":" + line + ";" + ++i + ":" + nx + ";0");
+		}
 		else msg.setContent("null");
 		msg.addReceiver(new AID(agent, AID.ISLOCALNAME));
 		sendMessage(msg);
