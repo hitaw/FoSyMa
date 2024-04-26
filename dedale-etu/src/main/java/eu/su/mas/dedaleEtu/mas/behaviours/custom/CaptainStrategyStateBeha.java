@@ -72,11 +72,14 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 			List<String> golemPath = myMap.getShortestPath(posGolem, objectifGolem); // Hope is sweet
 			String nextGolemStep = golemPath.isEmpty() ? posGolem : golemPath.get(0);
 			nextLine = myMap.neighborLine(nextGolemStep, objectifGolem);
-
-
-			msg.setContent(this.iteration + ":"+ line.toString() +";" + ++this.iteration + ":" + nextLine.toString()+ ";" + objectifGolem);
 			myAgent.setLine(line);
 			myAgent.setNextLine(nextLine);
+
+			List<String> lineShort = myAgent.getLine();
+			if (!lineShort.isEmpty()) lineShort.remove(0);
+			List<String> nextLineShort = myAgent.getNextLine();
+			if (!nextLineShort.isEmpty())nextLineShort.remove(0);
+			msg.setContent(this.iteration + ":"+ lineShort +";" + ++this.iteration + ":" + nextLineShort + ";" + objectifGolem);
 		}
 		else { // There is no interesting nodes for our team, we need more agents
 			msg.setContent("null");
@@ -112,7 +115,11 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 		msg.setSender(this.myAgent.getAID());
 		msg.setProtocol("PLAN");
-		msg.setContent(this.iteration + ":"+ myAgent.getLine().toString() +";" + ++this.iteration + ":" + myAgent.getNextLine().toString()+ ";" + objectifGolem);
+		List<String> lineShort = myAgent.getLine();
+		if (!lineShort.isEmpty()) lineShort.remove(0);
+		List<String> nextLineShort = myAgent.getNextLine();
+		if (!nextLineShort.isEmpty())nextLineShort.remove(0);
+		msg.setContent(this.iteration + ":"+ lineShort +";" + ++this.iteration + ":" + nextLineShort + ";" + objectifGolem);
 		for (String agentName : team) {
 			if (agentName == this.myAgent.getLocalName()) continue;
 			msg.addReceiver(new AID(agentName, AID.ISLOCALNAME));
@@ -136,14 +143,14 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 	private void calculateItinerary(List<String> line, Location myPosition) {
         List<String> path = myMap.getShortestPath(myPosition.getLocationId(), line.get(0));
 
-		int length = Integer.MAX_VALUE;
-		for (String s : line) {
-			List<String> p = myMap.getShortestPath(myPosition.getLocationId(), s);
-			if (p != null && p.size() < length) {
-                length = p.size();
-				path = p;
-			}
-		}
+//		int length = Integer.MAX_VALUE;
+//		for (String s : line) {
+//			List<String> p = myMap.getShortestPath(myPosition.getLocationId(), s);
+//			if (p != null && p.size() < length) {
+//                length = p.size();
+//				path = p;
+//			}
+//		}
 		myMap.setPlannedItinerary(path);
 	}
 
@@ -225,7 +232,8 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 				nextNodeId = myMap.getNextNodePlan() != null ? myMap.getNextNodePlan() : myPosition.getLocationId();
 
 				// If we are on the line and line == nextLine, we are blocking. Let's check that the golem is indeed where we think by going there
-				if ( myAgent.getLine().equals(myAgent.getNextLine()) && line.contains(myPosition.getLocationId())) {
+//				if ( myAgent.getLine().equals(myAgent.getNextLine()) && line.contains(myPosition.getLocationId())) {
+				if ( myAgent.getLine().equals(myAgent.getNextLine()) && myPosition.getLocationId().equals(line.get(0))) {
 					nextNodeId = objectifGolem;
 					blocking = true;
 				}

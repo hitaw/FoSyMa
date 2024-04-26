@@ -506,11 +506,25 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		msg.setSender(getAID());
 		msg.setProtocol("PLAN");
 		int i = iteration;
+
 		if (line != null && !line.isEmpty()) {
 			String nx;
 			if (nextLine == null) nx = "";
-			else nx = nextLine.toString();
-			msg.setContent(i + ":" + line + ";" + ++i + ":" + nx + ";0");
+			else{
+                if (this.getLocalName().compareTo(getChefName()) == 0) {
+                    List<String> nextLineShort = getNextLine();
+                    if (!nextLineShort.isEmpty()) nextLineShort.remove(0);
+                    nx = nextLineShort.toString();
+                } else {
+                    nx = nextLine.toString();
+                }
+            }
+
+            List<String> lineShort = getLine();
+            if (this.getLocalName().compareTo(getChefName()) == 0) {
+                lineShort.remove(0);
+            }
+			msg.setContent(i + ":" + lineShort + ";" + ++i + ":" + nx + ";0");
 		}
 		else msg.setContent("null");
 		msg.addReceiver(new AID(agent, AID.ISLOCALNAME));
