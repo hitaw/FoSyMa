@@ -29,7 +29,6 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 	String objectifGolem = null;
 	String posGolem;
 	int iteration = 0;
-	String lastKnownDestination = null;
 
 	/**
  *
@@ -134,22 +133,25 @@ public class TeamStrategyStateBeha extends OneShotBehaviour {
 	}
 
 	private void calculateItinerary(List<String> line, Location myPosition) {
-		if (line.get(0) == null) return;
-		List<String> path = myMap.getShortestPath(myPosition.getLocationId(), line.get(0));
+		String chosen;
+		List<String> path;
+		if (line.size() == 1) { // On veut faire en sorte que le chef soit celui sur le premier noeud de la ligne
+			chosen = myMap.neighborLine(myPosition.getLocationId(), line.get(0)).get(0);
+			path = myMap.getShortestPath(myPosition.getLocationId(), chosen);
+			myMap.setPlannedItinerary(path);
+			return;
+		}
+		path = myMap.getShortestPath(myPosition.getLocationId(), line.get(0));
 
 		int length = Integer.MAX_VALUE;
-		String chosen = line.get(0);
-		for (String s : line) {
-			if (s == null) continue;
-			if (s == lastKnownDestination) continue;
+		for (int i = 1; i < line.size(); i++) { // Commencer à 1 pour ne pas aller au noeud zéro
+			String s = line.get(i);
 			List<String> p = myMap.getShortestPath(myPosition.getLocationId(), s);
 			if (p != null && p.size() < length) {
-				chosen = s;
 				path = p;
 				length = path.size();
 			}
 		}
-		lastKnownDestination = chosen; //won't try to go twice to the same node
 		myMap.setPlannedItinerary(path);
 	}
 

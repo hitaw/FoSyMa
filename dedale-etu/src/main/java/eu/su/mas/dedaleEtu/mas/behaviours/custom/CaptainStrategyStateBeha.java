@@ -75,11 +75,7 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 			myAgent.setLine(line);
 			myAgent.setNextLine(nextLine);
 
-			List<String> lineShort = myAgent.getLine();
-			if (!lineShort.isEmpty()) lineShort.remove(0);
-			List<String> nextLineShort = myAgent.getNextLine();
-			if (!nextLineShort.isEmpty())nextLineShort.remove(0);
-			msg.setContent(this.iteration + ":"+ lineShort +";" + ++this.iteration + ":" + nextLineShort + ";" + objectifGolem);
+			msg.setContent(this.iteration + ":"+ line +";" + ++this.iteration + ":" + nextLine + ";" + objectifGolem);
 		}
 		else { // There is no interesting nodes for our team, we need more agents
 			msg.setContent("null");
@@ -115,11 +111,8 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 		msg.setSender(this.myAgent.getAID());
 		msg.setProtocol("PLAN");
-		List<String> lineShort = myAgent.getLine();
-		if (!lineShort.isEmpty()) lineShort.remove(0);
-		List<String> nextLineShort = myAgent.getNextLine();
-		if (!nextLineShort.isEmpty())nextLineShort.remove(0);
-		msg.setContent(this.iteration + ":"+ lineShort +";" + ++this.iteration + ":" + nextLineShort + ";" + objectifGolem);
+
+		msg.setContent(this.iteration + ":"+ myAgent.getLine() +";" + ++this.iteration + ":" + myAgent.getNextLine() + ";" + objectifGolem);
 		for (String agentName : team) {
 			if (agentName == this.myAgent.getLocalName()) continue;
 			msg.addReceiver(new AID(agentName, AID.ISLOCALNAME));
@@ -141,7 +134,9 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 	}
 
 	private void calculateItinerary(List<String> line, Location myPosition) {
-        List<String> path = myMap.getShortestPath(myPosition.getLocationId(), line.get(0));
+		List<String> path = null;
+		if (line != null && !line.isEmpty())
+        	path = myMap.getShortestPath(myPosition.getLocationId(), line.get(0));
 
 //		int length = Integer.MAX_VALUE;
 //		for (String s : line) {
@@ -271,9 +266,12 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 						msg.setSender(this.myAgent.getAID());
 						msg.setProtocol("FREEZE");
 						msg.setContent(objectifGolem);
-						for (int i = 0; i < line.size(); i++) { // line forcément plus petit que le nb d'agents de la team par définition du blocage
-							msg.addReceiver(new AID(team.get(i), AID.ISLOCALNAME));
-							System.out.println("Send freeze to " + team.get(i));
+
+						for (String agent : team) {
+							if (line.contains(myAgent.getAgentPosition(agent))) {
+								msg.addReceiver(new AID(agent, AID.ISLOCALNAME));
+								System.out.println("Send freeze to " + agent);
+							}
 						}
 						((AbstractDedaleAgent)this.myAgent).sendMessage(msg);
 
@@ -281,8 +279,13 @@ public class CaptainStrategyStateBeha extends OneShotBehaviour {
 						ACLMessage msgFree = new ACLMessage(ACLMessage.INFORM);
 						msgFree.setSender(this.myAgent.getAID());
 						msgFree.setProtocol("FREE");
-						for (int i = line.size(); i < team.size(); i ++) {
-							msgFree.addReceiver(new AID(team.get(i), AID.ISLOCALNAME));
+//						for (int i = line.size(); i < team.size(); i ++) {
+//							msgFree.addReceiver(new AID(team.get(i), AID.ISLOCALNAME));
+//						}
+						for (String agent : team) {
+							if (!line.contains(myAgent.getAgentPosition(agent))) {
+								msgFree.addReceiver(new AID(agent, AID.ISLOCALNAME));
+							}
 						}
 						((AbstractDedaleAgent)this.myAgent).sendMessage(msgFree);
 						freeze = true;

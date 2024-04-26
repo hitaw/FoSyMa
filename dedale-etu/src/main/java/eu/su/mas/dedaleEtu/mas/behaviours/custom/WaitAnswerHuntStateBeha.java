@@ -236,7 +236,11 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
 
 		ACLMessage freeReceived = this.myAgent.receive(freeTemplate);
-		if (freeReceived != null) {
+		while (freeReceived != null) {
+			if (!myAgent.getTeam().contains(freeReceived.getSender().getLocalName())) {
+				freeReceived = this.myAgent.receive(freeTemplate);
+				continue;
+			}
 			System.out.println(this.myAgent.getLocalName()+ "-- received free from "+freeReceived.getSender().getLocalName());
 
 			myAgent.resetTeam();

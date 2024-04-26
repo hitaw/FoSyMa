@@ -126,7 +126,12 @@ public class WalkStateBeha extends OneShotBehaviour {
 						nextNodeId=path.get(0);//getShortestPath(myPosition,this.openNodes.get(0)).get(0);
 						myMap.setPlannedItinerary(path);
 					} else {
-						nextNodeId = myPosition.getLocationId();
+						path = this.myMap.getShortestPath(myPosition.getLocationId(), myMap.getRandomNode());
+						if (path != null) {
+							nextNodeId = path.get(0);
+							myMap.setPlannedItinerary(path);
+						} else
+							nextNodeId = myPosition.getLocationId();
 					}
 					//System.out.println(this.myAgent.getLocalName()+"-- list= "+this.myMap.getOpenNodes()+"| nextNode: "+nextNode);
 				} else {

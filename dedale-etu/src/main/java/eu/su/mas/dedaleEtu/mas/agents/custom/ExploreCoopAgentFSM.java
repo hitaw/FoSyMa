@@ -61,7 +61,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	// Hunting variables
 	private boolean hunting = false;
 	private List<String> team = new ArrayList<String>();
-	public static final int MaxDistanceGolem = 3; //This determines the distance maximum that a team is going to try to move a golem in order to block it.
+	public static final int MaxDistanceGolem = 5; //This determines the distance maximum that a team is going to try to move a golem in order to block it.
 	private Map<String, Couple<String,String>> agentsPositions = new HashMap<String, Couple<String, String>>();
 	private List<String> line;
 	private List<String> nextLine;
@@ -476,6 +476,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 	}
 
 	public boolean isReady() {
+		if (line == null) return true;
 		System.out.println("Call is team ready ?");
 		int cpt = 1;
 		for (int i = 1; i < team.size(); i++) {
@@ -510,21 +511,8 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		if (line != null && !line.isEmpty()) {
 			String nx;
 			if (nextLine == null) nx = "";
-			else{
-                if (this.getLocalName().compareTo(getChefName()) == 0) {
-                    List<String> nextLineShort = getNextLine();
-                    if (!nextLineShort.isEmpty()) nextLineShort.remove(0);
-                    nx = nextLineShort.toString();
-                } else {
-                    nx = nextLine.toString();
-                }
-            }
-
-            List<String> lineShort = getLine();
-            if (this.getLocalName().compareTo(getChefName()) == 0) {
-                lineShort.remove(0);
-            }
-			msg.setContent(i + ":" + lineShort + ";" + ++i + ":" + nx + ";0");
+			else nx = nextLine.toString();
+			msg.setContent(i + ":" + line + ";" + ++i + ":" + nx + ";0");
 		}
 		else msg.setContent("null");
 		msg.addReceiver(new AID(agent, AID.ISLOCALNAME));

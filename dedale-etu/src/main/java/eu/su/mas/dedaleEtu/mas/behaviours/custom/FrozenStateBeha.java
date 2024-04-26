@@ -3,6 +3,7 @@ package eu.su.mas.dedaleEtu.mas.behaviours.custom;
 import eu.su.mas.dedale.env.gs.gsLocation;
 import eu.su.mas.dedale.mas.AbstractDedaleAgent;
 import eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM;
+import jade.core.AID;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
@@ -54,6 +55,22 @@ public class FrozenStateBeha extends OneShotBehaviour {
 				diagAnswer.setProtocol("DIAGNOSTIC");
 				((AbstractDedaleAgent)this.myAgent).sendMessage(diagAnswer);
 			}
+
+            // Send free to agents that may not be freed
+            String sender = diagReceived.getSender().getLocalName();
+            if (myAgent.getTeam().contains(sender)) {
+
+                ACLMessage msgFree = new ACLMessage(ACLMessage.INFORM);
+                msgFree.setSender(this.myAgent.getAID());
+                msgFree.setProtocol("FREE");
+                if (!myAgent.getLine().contains(myAgent.getAgentPosition(sender))) {
+                    msgFree.addReceiver(new AID(sender, AID.ISLOCALNAME));
+                }
+                ((AbstractDedaleAgent)this.myAgent).sendMessage(msgFree);
+
+            };
+
+
 			diagReceived = this.myAgent.receive(diagTemplate);
 		}
 	}
