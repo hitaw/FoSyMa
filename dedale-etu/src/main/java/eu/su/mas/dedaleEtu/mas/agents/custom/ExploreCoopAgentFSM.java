@@ -39,7 +39,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 
 	// General variables
 	List<String> list_agentNames = new ArrayList<String>();
-	public static final int WaitTime = 100;
+	public static final int WaitTime = 400;
 	private MapRepresentation myMap;
 	private Date expiration = new Date();
 	private Map<Edge, Integer> edgesRemoved = new HashMap<Edge, Integer>();
@@ -426,7 +426,7 @@ public class ExploreCoopAgentFSM extends AbstractDedaleAgent {
 		}
 		this.sendMessage(diag);
 
-		Date expiration = new Date(new Date().getTime()+WaitTime*3);
+		Date expiration = new Date(new Date().getTime()+WaitTime);
 		MessageTemplate repTemplate = MessageTemplate.and(
 				MessageTemplate.MatchProtocol("DIAGNOSTIC"),
 				MessageTemplate.MatchPerformative(ACLMessage.CONFIRM));

@@ -12,6 +12,9 @@ import static eu.su.mas.dedaleEtu.mas.agents.custom.ExploreCoopAgentFSM.WaitTime
 
 public class FrozenStateBeha extends OneShotBehaviour {
 
+
+
+
 	private static final long serialVersionUID = 8567689731496787661L;
 
 	private ExploreCoopAgentFSM myAgent;

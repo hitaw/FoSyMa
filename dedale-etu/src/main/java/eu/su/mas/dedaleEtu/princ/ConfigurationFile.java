@@ -86,8 +86,8 @@ public final class ConfigurationFile {
 //	public static String INSTANCE_TOPOLOGY="resources/topology/map2022-topologyExam1-draft.dgs";
 	//public static String INSTANCE_TOPOLOGY="resources/topology/map2022-topologyExam-V2b.dgs";
 //	public static String INSTANCE_TOPOLOGY="resources/topology/map2019-topologyExam1";
-	public static String INSTANCE_TOPOLOGY="ressources/topology/map2024-topologyExam1";
-//	public static String INSTANCE_TOPOLOGY="ressources/topology/map2024-topologyExam2";
+	public static String INSTANCE_TOPOLOGY="resources/topology/map2024-topologyExam1.dgs";
+//	public static String INSTANCE_TOPOLOGY="resources/topology/map2024-topologyExam2.dgs";
 	
 
 	

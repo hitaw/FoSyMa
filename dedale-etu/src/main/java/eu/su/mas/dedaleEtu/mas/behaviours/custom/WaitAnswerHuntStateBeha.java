@@ -116,7 +116,7 @@ public class WaitAnswerHuntStateBeha extends OneShotBehaviour {
 		myAgent.setVoisins(listReceiver, 0);
 
 		/*---------------------------------------------- team building -------------------------------------*/
-		Pattern p = Pattern.compile("[a-zA-Z]+");
+		Pattern p = Pattern.compile("[a-zA-Z1-9]+");
 		Matcher m;
 		//check if PROPOSE received
 		MessageTemplate offerTemplate = MessageTemplate.and(

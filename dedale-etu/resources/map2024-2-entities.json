@@ -17,7 +17,7 @@
   "initialLocation": "h2",
   "backPackCapacityGold": -1,
   "backPackCapacityDiamond":-1, 
-  "detectionRadius": 2,
+  "detectionRadius": 1,
   "strengthExpertise": 1,
   "lockPickingExpertise":1
   },
@@ -28,7 +28,7 @@
   "initialLocation": "h12",
   "backPackCapacityGold": -1,
   "backPackCapacityDiamond":-1, 
-  "detectionRadius": 2,
+  "detectionRadius": 1,
   "strengthExpertise": 1,
   "lockPickingExpertise":1
   },
