@@ -427,7 +427,6 @@ public class Principal {
 		agentName="H3";
 
 		//3) If you want to give specific parameters to your agent, add them here
-//		Object [] entityParametersExplo1={};
 		Object [] entityParametersExplo1={"H1", "H2"};
 
 		//4) Give the class name of your agent to let the system instantiate it
