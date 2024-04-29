@@ -1,0 +1,108 @@
+DGS004
+null 0 0
+an h1  
+cn h1 label:h1 
+an h2  
+cn h2 label:h2 
+an h3  
+cn h3 label:h3 
+an h4  
+cn h4 label:h4 
+an h5  
+cn h5 label:h5 
+an h6  
+cn h6 label:h6 
+an h7  
+cn h7 label:h7 
+an h8  
+cn h8 label:h8 
+an h9  
+cn h9 label:h9 
+an h11  
+cn h11 label:h11 
+an h12  
+cn h12 label:h12 
+an h13  
+cn h13 label:h13 
+an h14  
+cn h14 label:h14 
+an h15  
+cn h15 label:h15 
+an h16  
+cn h16 label:h16 
+an h17  
+cn h17 label:h17 
+an h18  
+cn h18 label:h18 
+an h19  
+cn h19 label:h19 
+an h20  
+cn h20 label:h20 
+an h21  
+cn h21 label:h21 
+an h22  
+cn h22 label:h22 
+an h23  
+cn h23 label:h23 
+an h25  
+cn h25 label:h25 
+an h26  
+cn h26 label:h26 
+an h40  
+cn h40 label:h40 
+ae he1 h1 h2
+ae he2 h1 h3
+ae he3 h1 h4
+ae he4 h1 h5
+ae he5 h1 h6
+ae he6 h1 h7
+ae he7 h1 h8
+ae he8 h1 h9
+ae he9 h2 h3
+ae he10 h2 h9
+ae he11 h3 h4
+ae he12 h4 h5
+ae he13 h5 h6
+ae he14 h6 h7
+ae he15 h7 h8
+ae he16 h8 h9
+ae he19 h11 h12
+ae he20 h12 h13
+ae he21 h13 h14
+ae he22 h14 h15
+ae he23 h15 h16
+ae he24 h16 h17
+ae he25 h17 h18
+ae he26 h18 h19
+ae he27 h19 h20
+ae he28 h20 h21
+ae he29 h21 h22
+ae he30 h22 h23
+ae he34 h11 h9
+ae he35 h11 h2
+ae he36 h12 h2
+ae he37 h13 h2
+ae he38 h13 h3
+ae he39 h14 h3
+ae he40 h15 h3
+ae he41 h15 h4
+ae he42 h16 h4
+ae he43 h17 h4
+ae he44 h17 h5
+ae he45 h18 h5
+ae he46 h19 h5
+ae he47 h19 h6
+ae he48 h20 h6
+ae he49 h21 h6
+ae he50 h21 h7
+ae he51 h22 h7
+ae he52 h23 h7
+ae he53 h23 h8
+ae he55 h25 h8
+ae he56 h25 h9
+ae he73 h26 h25
+ae he75 h26 h11
+ae he115 h40 h23
+ae he117 h40 h25
+ae he118 h8 h40
+ae he119 h9 h26

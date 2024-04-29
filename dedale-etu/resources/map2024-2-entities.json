@@ -1,0 +1,128 @@
+[
+{ 
+  "agentType":"wumpus",
+  "agentName": "CatchMe1",
+  "communicationRange": 3,
+  "initialLocation": "h1",
+  "backPackCapacityGold": -1,
+  "backPackCapacityDiamond":-1, 
+  "detectionRadius": 1,
+  "strengthExpertise": 1,
+  "lockPickingExpertise":1
+  },
+  { 
+  "agentType":"wumpus",
+  "agentName": "CatchMe2",
+  "communicationRange": 3,
+  "initialLocation": "h2",
+  "backPackCapacityGold": -1,
+  "backPackCapacityDiamond":-1, 
+  "detectionRadius": 2,
+  "strengthExpertise": 1,
+  "lockPickingExpertise":1
+  },
+  { 
+  "agentType":"wumpus",
+  "agentName": "CatchMe3",
+  "communicationRange": 3,
+  "initialLocation": "h12",
+  "backPackCapacityGold": -1,
+  "backPackCapacityDiamond":-1, 
+  "detectionRadius": 2,
+  "strengthExpertise": 1,
+  "lockPickingExpertise":1
+  },
+{ 
+  "agentType":"agentExplo",
+  "agentName": "H1",
+  "communicationRange": 2,
+  "initialLocation": "h3",
+  "backPackCapacityGold": -1,
+  "backPackCapacityDiamond":-1, 
+  "detectionRadius": 0,
+  "strengthExpertise": 1,
+  "lockPickingExpertise":1
+  },
+  { 
+  "agentType":"agentExplo",
+  "agentName": "H2",
+  "communicationRange": 3,
+  "initialLocation": "h4",
+  "backPackCapacityGold": -1,
+  "backPackCapacityDiamond":-1, 
+  "detectionRadius": 0,
+  "strengthExpertise": 1,
+  "lockPickingExpertise":1
+  },
+  { 
+  "agentType":"agentExplo",
+  "agentName": "H3",
+  "communicationRange": 3,
+  "initialLocation": "h5",
+  "backPackCapacityGold": -1,
+  "backPackCapacityDiamond":-1, 
+  "detectionRadius": 0,
+  "strengthExpertise": 1,
+  "lockPickingExpertise":1
+  }
+  ,
+  { 
+  "agentType":"agentExplo",
+  "agentName": "H4",
+  "communicationRange": 3,
+  "initialLocation": "h6",
+  "backPackCapacityGold": -1,
+  "backPackCapacityDiamond":-1, 
+  "detectionRadius": 0,
+  "strengthExpertise": 1,
+  "lockPickingExpertise":1
+  }
+  ,
+  { 
+  "agentType":"agentExplo",
+  "agentName": "H5",
+  "communicationRange": 3,
+  "initialLocation": "h7",
+  "backPackCapacityGold": -1,
+  "backPackCapacityDiamond":-1, 
+  "detectionRadius": 0,
+  "strengthExpertise": 1,
+  "lockPickingExpertise":1
+  }
+  ,
+  { 
+  "agentType":"agentExplo",
+  "agentName": "H6",
+  "communicationRange": 3,
+  "initialLocation": "h8",
+  "backPackCapacityGold": -1,
+  "backPackCapacityDiamond":-1, 
+  "detectionRadius": 0,
+  "strengthExpertise": 1,
+  "lockPickingExpertise":1
+  }
+  ,
+  { 
+  "agentType":"agentExplo",
+  "agentName": "H7",
+  "communicationRange": 3,
+  "initialLocation": "h9",
+  "backPackCapacityGold": -1,
+  "backPackCapacityDiamond":-1, 
+  "detectionRadius": 0,
+  "strengthExpertise": 1,
+  "lockPickingExpertise":1
+  }
+  ,
+  { 
+  "agentType":"agentExplo",
+  "agentName": "H8",
+  "communicationRange": 3,
+  "initialLocation": "h23",
+  "backPackCapacityGold": -1,
+  "backPackCapacityDiamond":-1, 
+  "detectionRadius": 0,
+  "strengthExpertise": 1,
+  "lockPickingExpertise":1
+  }
+]
